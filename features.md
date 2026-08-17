@@ -1,6 +1,6 @@
 # Fonctionnalites du projet FindMe
 
-Projet  : findme - API Spring Boot 4.1.0 / Java 26 / MySQL dockerise
+Projet  : findme - API Spring Boot 4.1.0 / Java 26 / PostgreSQL dockerise
 Collection : GeoLink - Mocks (findme.postman_collection.json)
 Cree le : 2026-07-15
 Derniere mise a jour : 2026-07-15
