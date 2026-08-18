@@ -26,6 +26,40 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:mock-google-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:mock-google-client-secret}
+            scope: openid, email, profile
+          apple:
+            client-id: ${APPLE_CLIENT_ID:com.geolink.findme.client}
+            client-secret: ${APPLE_CLIENT_SECRET:mock-apple-client-secret}
+            authorization-grant-type: authorization_code
+            scope: openid, name, email
+            client-authentication-method: client_secret_post
+            redirect-uri: "{baseUrl}/login/oauth2/code/apple"
+        provider:
+          google:
+            issuer-uri: https://accounts.google.com
+          apple:
+            authorization-uri: https://appleid.apple.com/auth/authorize
+            token-uri: https://appleid.apple.com/auth/token
+            jwk-set-uri: https://appleid.apple.com/auth/keys
+            user-name-attribute: sub
+
 server:
   port: ${SERVER_PORT:8080}
   error:
@@ -37,6 +71,22 @@ securite:
     secret: ${JWT_SECRET}
     duree-acces-minutes: ${JWT_ACCESS_MINUTES}
     duree-rafraichissement-jours: ${JWT_REFRESH_DAYS}
+
+app:
+  otp:
+    ttl-minutes: 10
+  mail:
+    from: "findMe <no-reply@findme.geolink.com>"
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+apple:
+  team-id: ${APPLE_TEAM_ID:mock-team-id}
+  client-id: ${APPLE_CLIENT_ID:com.geolink.findme.client}
+  key-id: ${APPLE_KEY_ID:mock-key-id}
+  private-key-path: ${APPLE_PRIVATE_KEY_PATH:}
 
 management:
   endpoints:

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body style="font-family: Arial, sans-serif; background: #f4f6f8; padding: 24px;">
+    <div style="max-width: 480px; margin: auto; background: white; border-radius: 8px; padding: 32px;">
+        <h2 style="color: #0f2942;">Bonjour <span th:text="${fullName}">Jean</span>,</h2>
+        <p th:text="${introText}">Voici votre code de vérification :</p>
+        <div style="font-size: 32px; letter-spacing: 8px; font-weight: bold; color: #0d6e5c; text-align: center; margin: 24px 0;">
+            <span th:text="${otpCode}">123456</span>
+        </div>
+        <p style="color: #6b7280; font-size: 13px;">
+            Ce code expire dans <span th:text="${ttlMinutes}">10</span> minutes.
+            Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.
+        </p>
+    </div>
+</body>
+</html>

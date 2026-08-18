@@ -82,6 +82,7 @@ class UserServiceImplTest {
         UpdateProfileRequestDTO request = UpdateProfileRequestDTO.builder()
                 .firstName("Pierre")
                 .lastName("Martin")
+                .phoneNumber("+33612345678")
                 .build();
 
         when(userRepository.findByEmail("test@geolink.com")).thenReturn(Optional.of(testUser));
@@ -94,6 +95,7 @@ class UserServiceImplTest {
         assertThat(result).isNotNull();
         assertThat(testUser.getFirstName()).isEqualTo("Pierre");
         assertThat(testUser.getLastName()).isEqualTo("Martin");
+        assertThat(testUser.getPhoneNumber()).isEqualTo("+33612345678");
         verify(userRepository, times(1)).findByEmail("test@geolink.com");
         verify(userRepository, times(1)).save(testUser);
     }

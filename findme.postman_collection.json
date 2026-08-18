@@ -2,13 +2,13 @@
   "info": {
     "_postman_id": "a5e8f4c2-9b3d-4e12-8f90-7d6c5b4a3e21",
     "name": "FindMe API - Auth Service",
-    "description": "Collection Postman officielle pour la recette et le test direct de l'application Spring Boot FindMe Auth Service.\n\nContient tous les endpoints de l'application avec leurs en-têtes, corps de requête JSON et scripts automatiques de sauvegarde des tokens JWT.",
+    "description": "Collection Postman officielle pour la recette et le test direct de l'application Spring Boot FindMe Auth Service.\n\nContient tous les endpoints d'authentification (avec vérification OTP par mail, réinitialisation par OTP et déconnexion par Refresh Token) avec leurs en-têtes, corps de requête JSON et scripts automatiques de sauvegarde des tokens JWT.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
       "name": "1. Authentification",
-      "description": "Gestion de l'inscription, la connexion, le rafraîchissement des tokens et le mot de passe.",
+      "description": "Gestion de l'inscription, vérification OTP, connexion, rafraîchissement des tokens, déconnexion et réinitialisation de mot de passe.",
       "item": [
         {
           "name": "Inscription (SignUp)",
@@ -22,7 +22,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"Password123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/signup",
@@ -35,7 +35,65 @@
                 "signup"
               ]
             },
-            "description": "Création d'un nouveau compte utilisateur.\n- Mot de passe obligatoire: min 8 caractères, au moins 1 majuscule et 1 chiffre.\n- Statut de retour attendu: 201 Created"
+            "description": "Création d'un nouveau compte utilisateur non vérifié et envoi d'un code OTP à 6 chiffres par email.\n- Mot de passe obligatoire: min 8 caractères, au moins 1 majuscule et 1 chiffre.\n- Statut de retour attendu: 201 Created"
+          },
+          "response": []
+        },
+        {
+          "name": "Vérification de compte (Verify Account OTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"code\": \"{{otp_code}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify-account",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-account"
+              ]
+            },
+            "description": "Vérifie et active le compte utilisateur à l'aide du code OTP à 6 chiffres reçu par mail.\n- Statut de retour attendu: 200 OK"
+          },
+          "response": []
+        },
+        {
+          "name": "Renvoi OTP (Resend OTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/resend-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "resend-otp"
+              ]
+            },
+            "description": "Génère et renvoie un nouveau code OTP de vérification par mail pour un compte non encore vérifié."
           },
           "response": []
         },
@@ -70,7 +128,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123\"\n}"
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"Password123\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/signin",
@@ -83,7 +141,7 @@
                 "signin"
               ]
             },
-            "description": "Authentification de l'utilisateur.\nSauvegarde automatiquement `access_token` et `refresh_token` dans les variables de collection Postman lors du succès (HTTP 200)."
+            "description": "Authentification de l'utilisateur (le compte doit être vérifié préalable par OTP).\nSauvegarde automatiquement `access_token` et `refresh_token` dans les variables de collection Postman."
           },
           "response": []
         },
@@ -141,10 +199,14 @@
             "method": "POST",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
             "url": {
               "raw": "{{base_url}}/api/auth/logout",
               "host": [
@@ -156,12 +218,12 @@
                 "logout"
               ]
             },
-            "description": "Révoque tous les Refresh Tokens de l'utilisateur connecté.\nNécessite d'être authentifié (Token Bearer).\nStatut de retour attendu: 204 No Content"
+            "description": "Révoque le Refresh Token transmis dans le corps de la requête.\nEndpoint public : ne nécessite pas d'en-tête Authorization valide si le token est dans le corps.\nStatut de retour attendu: 204 No Content"
           },
           "response": []
         },
         {
-          "name": "Mot de passe oublié (Forgot Password)",
+          "name": "Mot de passe oublié (Forgot Password OTP)",
           "request": {
             "method": "POST",
             "header": [
@@ -172,7 +234,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+              "raw": "{\n  \"email\": \"{{user_email}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/forgot-password",
@@ -185,12 +247,12 @@
                 "forgot-password"
               ]
             },
-            "description": "Demande de réinitialisation de mot de passe.\nRetourne 200 OK systématiquement pour des raisons de sécurité."
+            "description": "Génère et envoie un code OTP de réinitialisation par email.\nRetourne 200 OK systématiquement (anti- account enumeration)."
           },
           "response": []
         },
         {
-          "name": "Réinitialiser mot de passe (Reset Password)",
+          "name": "Réinitialiser mot de passe (Reset Password OTP)",
           "request": {
             "method": "POST",
             "header": [
@@ -201,7 +263,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"token\": \"token_reinitialisation_fourni\",\n  \"newPassword\": \"NewPassword123\"\n}"
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"code\": \"{{otp_code}}\",\n  \"newPassword\": \"NewPassword123\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/reset-password",
@@ -214,7 +276,107 @@
                 "reset-password"
               ]
             },
-            "description": "Définition d'un nouveau mot de passe grâce à un token de réinitialisation valide."
+            "description": "Réinitialise le mot de passe grâce à l'email, au code OTP à 6 chiffres reçu par mail et au nouveau mot de passe. Révoque tous les refresh tokens existants de l'utilisateur."
+          },
+          "response": []
+        },
+        {
+          "name": "Connexion Google (Redirection Web)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/google/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "google",
+                "login"
+              ]
+            },
+            "description": "Redirige le navigateur vers la mire d'authentification Google OAuth2."
+          },
+          "response": []
+        },
+        {
+          "name": "Connexion Google (ID Token Mobile / SPA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"eyJhbGciOiJSUzI1NiIs...\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/google",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "google"
+              ]
+            },
+            "description": "Authentifie l'utilisateur via son ID Token Google émis par le SDK mobile ou SPA."
+          },
+          "response": []
+        },
+        {
+          "name": "Connexion Apple (Redirection Web)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/apple/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "apple",
+                "login"
+              ]
+            },
+            "description": "Redirige le navigateur vers la mire d'authentification Sign in with Apple."
+          },
+          "response": []
+        },
+        {
+          "name": "Connexion Apple (ID Token Mobile / SPA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"eyJhbGciOiJSUzI1NiIs...\",\n  \"firstName\": \"Jean\",\n  \"lastName\": \"Dupont\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/apple",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "apple"
+              ]
+            },
+            "description": "Authentifie l'utilisateur via son ID Token Apple émis par le SDK mobile Sign in with Apple."
           },
           "response": []
         }
@@ -265,7 +427,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"phoneNumber\": \"+33612345678\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/users/me",
@@ -278,7 +440,7 @@
                 "me"
               ]
             },
-            "description": "Met à jour le prénom et le nom de l'utilisateur connecté."
+            "description": "Met à jour le prénom, le nom et le numéro de téléphone (optionnel) de l'utilisateur connecté."
           },
           "response": []
         }
@@ -332,6 +494,16 @@
     {
       "key": "base_url",
       "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "user_email",
+      "value": "user@example.com",
+      "type": "string"
+    },
+    {
+      "key": "otp_code",
+      "value": "123456",
       "type": "string"
     },
     {

@@ -67,4 +67,17 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     public void revokeAllForUser(User user) {
         refreshTokenRepository.revokeAllByUser(user);
     }
+
+    @Override
+    @Transactional
+    public void revokeToken(String rawRefreshToken) {
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            return;
+        }
+        String hash = jwtService.hashToken(rawRefreshToken);
+        refreshTokenRepository.findByTokenHash(hash).ifPresent(token -> {
+            token.setRevoked(true);
+            refreshTokenRepository.save(token);
+        });
+    }
 }

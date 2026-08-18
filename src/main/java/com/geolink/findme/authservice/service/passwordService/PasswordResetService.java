@@ -14,10 +14,11 @@ public interface PasswordResetService {
     void requestReset(String email);
 
     /**
-     * Réinitialise le mot de passe à l'aide d'un token valide.
+     * Réinitialise le mot de passe à l'aide d'un code OTP valide.
      *
-     * @param token       le token de réinitialisation brut
+     * @param email       l'adresse email
+     * @param code        le code OTP à 6 chiffres
      * @param newPassword le nouveau mot de passe
      */
-    void resetPassword(String token, String newPassword);
+    void resetPassword(String email, String code, String newPassword);
 }

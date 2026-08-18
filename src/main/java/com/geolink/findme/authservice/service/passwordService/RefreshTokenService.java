@@ -30,4 +30,11 @@ public interface RefreshTokenService {
      * @param user l'utilisateur
      */
     void revokeAllForUser(User user);
+
+    /**
+     * Révoque un refresh token spécifique.
+     *
+     * @param rawRefreshToken le token brut fourni par le client
+     */
+    void revokeToken(String rawRefreshToken);
 }

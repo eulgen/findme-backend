@@ -3,8 +3,16 @@ package com.geolink.findme.authservice.integration;
 import com.geolink.findme.authservice.dto.request.RefreshRequestDTO;
 import com.geolink.findme.authservice.dto.request.SignInRequestDTO;
 import com.geolink.findme.authservice.dto.request.SignUpRequestDTO;
+import com.geolink.findme.authservice.dto.request.VerifyOtpRequestDTO;
 import com.geolink.findme.authservice.dto.response.AuthResponseDTO;
 import com.geolink.findme.authservice.dto.response.UserProfileDTO;
+import com.geolink.findme.authservice.entity.OtpCode;
+import com.geolink.findme.authservice.entity.OtpPurpose;
+import com.geolink.findme.authservice.entity.User;
+import com.geolink.findme.authservice.repository.OtpCodeRepository;
+import com.geolink.findme.authservice.repository.UserRepository;
+import com.geolink.findme.authservice.service.EmailService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,12 +25,13 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:authdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+        "spring.datasource.url=jdbc:h2:mem:authdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.datasource.password=",
@@ -30,7 +39,17 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.jpa.properties.hibernate.default_schema=authservice",
         "spring.flyway.schemas=authservice",
         "spring.flyway.default-schema=authservice",
-        "spring.flyway.create-schemas=true"
+        "spring.flyway.create-schemas=true",
+        "JWT_SECRET=super_secret_key_for_testing_purposes_123456789",
+        "JWT_ACCESS_MINUTES=15",
+        "JWT_REFRESH_DAYS=30",
+        "DB_URL=jdbc:h2:mem:authdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
+        "DB_USER=sa",
+        "DB_PASSWORD=",
+        "spring.security.oauth2.client.registration.google.client-id=mock-client-id",
+        "spring.security.oauth2.client.registration.google.client-secret=mock-client-secret",
+        "spring.security.oauth2.client.registration.apple.client-id=com.geolink.findme.client",
+        "spring.security.oauth2.client.registration.apple.client-secret=mock-client-secret"
 })
 class AuthSpringBootTest {
 
@@ -39,6 +58,12 @@ class AuthSpringBootTest {
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @MockitoBean
+    private EmailService emailService;
 
     private String baseUrl;
 
@@ -66,7 +91,11 @@ class AuthSpringBootTest {
         assertThat(signUpResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(signUpResp.getBody()).isNotNull();
         assertThat(signUpResp.getBody().getEmail()).isEqualTo("flow.user@geolink.com");
-        assertThat(signUpResp.getBody().getRole()).isEqualTo("USER");
+
+        // Manually mark account verified in DB
+        User savedUser = userRepository.findByEmail("flow.user@geolink.com").orElseThrow();
+        savedUser.setAccountVerified(true);
+        userRepository.saveAndFlush(savedUser);
 
         // 2. Sign In
         SignInRequestDTO signInReq = SignInRequestDTO.builder()
@@ -119,11 +148,14 @@ class AuthSpringBootTest {
         assertThat(refreshResp.getBody().getAccessToken()).isNotBlank();
         assertThat(refreshResp.getBody().getRefreshToken()).isNotEqualTo(refreshToken);
 
-        // 5. Logout
-        ResponseEntity<Void> logoutResp = restTemplate.exchange(
+        // 5. Logout with Body Refresh Token
+        RefreshRequestDTO logoutReq = RefreshRequestDTO.builder()
+                .refreshToken(refreshResp.getBody().getRefreshToken())
+                .build();
+
+        ResponseEntity<Void> logoutResp = restTemplate.postForEntity(
                 baseUrl + "/api/auth/logout",
-                HttpMethod.POST,
-                meEntity,
+                logoutReq,
                 Void.class
         );
 

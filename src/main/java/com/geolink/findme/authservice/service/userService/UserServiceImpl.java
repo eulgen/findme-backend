@@ -7,6 +7,8 @@ import com.geolink.findme.authservice.entity.User;
 import com.geolink.findme.authservice.exception.UserNotFoundException;
 import com.geolink.findme.authservice.repository.UserRepository;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,15 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
  * Implémentation du service utilisateur.
  */
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-
-    public UserServiceImpl(UserRepository userRepository, UserMapper userMapper) {
-        this.userRepository = userRepository;
-        this.userMapper = userMapper;
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -40,6 +38,7 @@ public class UserServiceImpl implements UserService {
 
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
+        user.setPhoneNumber(dto.getPhoneNumber());
 
         User updatedUser = userRepository.save(user);
         return userMapper.toDto(updatedUser);

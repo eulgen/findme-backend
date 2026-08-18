@@ -36,9 +36,31 @@ public interface AuthService {
     AuthResponseDTO refresh(RefreshRequestDTO dto);
 
     /**
-     * Déconnexion d'un utilisateur.
+     * Déconnexion d'un utilisateur par email.
      *
      * @param email l'email de l'utilisateur connecté
      */
     void logout(String email);
+
+    /**
+     * Déconnexion et révocation d'un refresh token spécifique.
+     *
+     * @param refreshToken le jeton de rafraîchissement à révoquer
+     */
+    void logoutWithToken(String refreshToken);
+
+    /**
+     * Vérification de compte par code OTP.
+     *
+     * @param email l'email de l'utilisateur
+     * @param code le code OTP reçu par mail
+     */
+    void verifyAccount(String email, String code);
+
+    /**
+     * Renvoi d'un nouveau code OTP de vérification de compte.
+     *
+     * @param email l'email de l'utilisateur
+     */
+    void resendVerificationOtp(String email);
 }

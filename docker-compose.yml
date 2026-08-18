@@ -9,10 +9,14 @@ services:
       - DB_URL=jdbc:postgresql://auth-db:5432/findme_db
       - DB_USER=findme_user
       - DB_PASSWORD=findme_password
+      - SPRING_MAIL_HOST=mailpit
+      - SPRING_MAIL_PORT=1025
       - JWT_SECRET=dGhpc19pc19hX3Zlcnlfc2VjdXJlX2xvbmdfc2VjcmV0X2tleV9mb3Jfand0X3NpZ25pbmdfYW5kX3ZlcmlmaWNhdGlvbl8xMjM0NTY3ODkw
     depends_on:
       auth-db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
 
   auth-db:
     image: postgres:16-alpine
@@ -31,6 +35,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: findme-mailpit
+    restart: always
+    ports:
+      - "1025:1025" # Serveur SMTP
+      - "8025:8025" # Web UI consultation des mails (http://localhost:8025)
 
 volumes:
   auth-db-data:

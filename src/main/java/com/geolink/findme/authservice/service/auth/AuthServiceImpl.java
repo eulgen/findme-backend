@@ -7,17 +7,24 @@ import com.geolink.findme.authservice.dto.request.SignUpRequestDTO;
 import com.geolink.findme.authservice.dto.response.AuthResponseDTO;
 import com.geolink.findme.authservice.dto.response.UserProfileDTO;
 import com.geolink.findme.authservice.entity.AccountStatus;
+import com.geolink.findme.authservice.entity.OtpPurpose;
 import com.geolink.findme.authservice.entity.RefreshToken;
 import com.geolink.findme.authservice.entity.Role;
 import com.geolink.findme.authservice.entity.User;
 import com.geolink.findme.authservice.exception.EmailAlreadyUsedException;
 import com.geolink.findme.authservice.exception.InvalidCredentialsException;
+import com.geolink.findme.authservice.exception.InvalidOrExpiredTokenException;
 import com.geolink.findme.authservice.repository.RoleRepository;
 import com.geolink.findme.authservice.repository.UserRepository;
 import com.geolink.findme.authservice.security.JwtService;
 import com.geolink.findme.authservice.security.UserPrincipal;
+import com.geolink.findme.authservice.service.EmailService;
+import com.geolink.findme.authservice.service.OtpService;
 import com.geolink.findme.authservice.service.passwordService.RefreshTokenService;
 
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +36,7 @@ import java.util.Set;
  * Implémentation du service d'authentification principal.
  */
 @Service
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -37,22 +45,11 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final OtpService otpService;
+    private final EmailService emailService;
 
-    public AuthServiceImpl(
-            UserRepository userRepository,
-            RoleRepository roleRepository,
-            RefreshTokenService refreshTokenService,
-            JwtService jwtService,
-            UserMapper userMapper,
-            PasswordEncoder passwordEncoder
-    ) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.refreshTokenService = refreshTokenService;
-        this.jwtService = jwtService;
-        this.userMapper = userMapper;
-        this.passwordEncoder = passwordEncoder;
-    }
+    @Value("${app.otp.ttl-minutes:10}")
+    private int otpTtlMinutes;
 
     @Override
     @Transactional(rollbackFor = EmailAlreadyUsedException.class)
@@ -74,8 +71,50 @@ public class AuthServiceImpl implements AuthService {
                 .roles(Set.of(userRole))
                 .build();
 
+        user.setAccountVerified(false);
         User savedUser = userRepository.save(user);
+
+        String otp = otpService.generate(savedUser, OtpPurpose.ACCOUNT_VERIFICATION);
+        emailService.sendOtpEmail(
+                savedUser.getEmail(),
+                savedUser.getFirstName() + " " + savedUser.getLastName(),
+                otp,
+                otpTtlMinutes,
+                OtpPurpose.ACCOUNT_VERIFICATION
+        );
+
         return userMapper.toDto(savedUser);
+    }
+
+    @Override
+    @Transactional
+    public void verifyAccount(String email, String code) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new InvalidOrExpiredTokenException("Utilisateur introuvable"));
+
+        otpService.verify(user, OtpPurpose.ACCOUNT_VERIFICATION, code);
+        user.setAccountVerified(true);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void resendVerificationOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new InvalidOrExpiredTokenException("Utilisateur introuvable"));
+
+        if (user.isAccountVerified()) {
+            throw new InvalidOrExpiredTokenException("Le compte est déjà vérifié");
+        }
+
+        String otp = otpService.generate(user, OtpPurpose.ACCOUNT_VERIFICATION);
+        emailService.sendOtpEmail(
+                user.getEmail(),
+                user.getFirstName() + " " + user.getLastName(),
+                otp,
+                otpTtlMinutes,
+                OtpPurpose.ACCOUNT_VERIFICATION
+        );
     }
 
     @Override
@@ -89,6 +128,9 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!user.isActive()) {
+            if (!user.isAccountVerified()) {
+                throw new InvalidCredentialsException("Veuillez vérifier votre compte par mail avant de vous connecter");
+            }
             throw new InvalidCredentialsException("Compte désactivé ou inactif");
         }
 
@@ -127,5 +169,11 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void logout(String email) {
         userRepository.findByEmail(email).ifPresent(refreshTokenService::revokeAllForUser);
+    }
+
+    @Override
+    @Transactional
+    public void logoutWithToken(String refreshToken) {
+        refreshTokenService.revokeToken(refreshToken);
     }
 }
