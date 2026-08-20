@@ -22,7 +22,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"Password123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"Password123\",\n  \"fullName\": \"John Doe\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/signup",
@@ -328,7 +328,26 @@
             },
             "description": "Authentifie l'utilisateur via son ID Token Google émis par le SDK mobile ou SPA."
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.accessToken) {",
+                  "        pm.collectionVariables.set('access_token', jsonData.accessToken);",
+                  "    }",
+                  "    if (jsonData.refreshToken) {",
+                  "        pm.collectionVariables.set('refresh_token', jsonData.refreshToken);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Connexion Apple (Redirection Web)",
@@ -363,7 +382,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"idToken\": \"eyJhbGciOiJSUzI1NiIs...\",\n  \"firstName\": \"Jean\",\n  \"lastName\": \"Dupont\"\n}"
+              "raw": "{\n  \"idToken\": \"eyJhbGciOiJSUzI1NiIs...\",\n  \"fullName\": \"Jean Dupont\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/apple",
@@ -378,7 +397,26 @@
             },
             "description": "Authentifie l'utilisateur via son ID Token Apple émis par le SDK mobile Sign in with Apple."
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.accessToken) {",
+                  "        pm.collectionVariables.set('access_token', jsonData.accessToken);",
+                  "    }",
+                  "    if (jsonData.refreshToken) {",
+                  "        pm.collectionVariables.set('refresh_token', jsonData.refreshToken);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         }
       ]
     },
@@ -427,7 +465,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"phoneNumber\": \"+33612345678\"\n}"
+              "raw": "{\n  \"fullName\": \"John Doe\",\n  \"phoneNumber\": \"+33612345678\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/users/me",
@@ -441,6 +479,263 @@
               ]
             },
             "description": "Met à jour le prénom, le nom et le numéro de téléphone (optionnel) de l'utilisateur connecté."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Addresses",
+      "description": "Endpoints de gestion des adresses de l'utilisateur (CRUD, photo, export PDF). Nécessite le Bearer Token.",
+      "item": [
+        {
+          "name": "Lister les adresses (List Addresses)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/addresses?page=0&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "addresses"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Retourne la liste paginée, triée et filtrable des adresses de l'utilisateur connecté"
+          }
+        },
+        {
+          "name": "Créer une adresse (Create Address)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"France\",\n  \"city\": \"Paris\",\n  \"street\": \"Avenue des Champs-Élysées\",\n  \"houseNumber\": \"10\",\n  \"gps\": {\n    \"latitude\": 48.8698,\n    \"longitude\": 2.3075\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "addresses"
+              ]
+            },
+            "description": "Crée une nouvelle adresse et la rattache à l'utilisateur (blocage strict à 4 adresses max)"
+          }
+        },
+        {
+          "name": "Détail d'une adresse (Get Address By ID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/addresses/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "addresses",
+                "1"
+              ]
+            },
+            "description": "Retourne les détails d'une adresse spécifique si elle appartient à l'utilisateur"
+          }
+        },
+        {
+          "name": "Modifier une adresse (Update Address)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"France\",\n  \"city\": \"Paris\",\n  \"street\": \"Rue de Rivoli\",\n  \"houseNumber\": \"20\",\n  \"gps\": {\n    \"latitude\": 48.8566,\n    \"longitude\": 2.3522\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/addresses/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "addresses",
+                "1"
+              ]
+            },
+            "description": "Met à jour les informations d'une adresse appartenant à l'utilisateur. Attention : avec l'unification des modèles de requête (AddressRequestDTO), les champs obligatoires (country, city, gps) doivent désormais être systématiquement fournis même pour une modification."
+          }
+        },
+        {
+          "name": "Supprimer une adresse (Delete Address)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/addresses/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "addresses",
+                "1"
+              ]
+            },
+            "description": "Supprime le lien d'adresse pour l'utilisateur (et l'adresse si elle devient orpheline)"
+          }
+        },
+        {
+          "name": "Upload de photo d'adresse (Upload Photo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.photoUrl) {",
+                  "        var parts = jsonData.photoUrl.split('/');",
+                  "        var filename = parts[parts.length - 1];",
+                  "        pm.collectionVariables.set('uploaded_filename', filename);",
+                  "        console.log('Nom de fichier sauvegardé dans uploaded_filename:', filename);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "sample_image.png"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/addresses/1/photo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "addresses",
+                "1",
+                "photo"
+              ]
+            },
+            "description": "Téléverse ou remplace l'image associée à une adresse (JPEG, PNG, WEBP, max 5 Mo). Sélectionner le fichier 'sample_image.png' inclus à la racine du projet FindMe."
+          },
+          "response": []
+        },
+        {
+          "name": "Exportation PDF data (Export Address Pdf Data)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/addresses/1/export",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "addresses",
+                "1",
+                "export"
+              ]
+            },
+            "description": "Retourne l'adresse formatée, la position GPS, le code d'adresse et les infos utilisateur pour la génération du PDF côté frontend"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Fichiers & Stockage Médias",
+      "description": "Endpoints publics pour accéder et afficher les fichiers médias téléversés.",
+      "item": [
+        {
+          "name": "Accéder à une photo d'adresse (Get Public File)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/files/addresses/{{uploaded_filename}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "files",
+                "addresses",
+                "{{uploaded_filename}}"
+              ]
+            },
+            "description": "Récupère et affiche l'image d'adresse téléversée. Endpoint public (ne nécessite pas de token Authorization). La variable 'uploaded_filename' est automatiquement remplie après l'upload de photo d'adresse."
           },
           "response": []
         }
@@ -513,6 +808,11 @@
     },
     {
       "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "uploaded_filename",
       "value": "",
       "type": "string"
     }
