@@ -53,7 +53,11 @@ spring:
             redirect-uri: "{baseUrl}/login/oauth2/code/apple"
         provider:
           google:
-            issuer-uri: https://accounts.google.com
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+            user-name-attribute: sub
           apple:
             authorization-uri: https://appleid.apple.com/auth/authorize
             token-uri: https://appleid.apple.com/auth/token
@@ -73,6 +77,10 @@ securite:
     duree-rafraichissement-jours: ${JWT_REFRESH_DAYS}
 
 app:
+  storage:
+    location: ${STORAGE_LOCATION:uploads}
+  backend:
+    base-url: ${BACKEND_BASE_URL:http://localhost:8080}
   otp:
     ttl-minutes: 10
   mail:
