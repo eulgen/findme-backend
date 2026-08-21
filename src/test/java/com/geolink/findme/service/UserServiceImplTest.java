@@ -91,8 +91,7 @@ class UserServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(testUser.getFullName()).isEqualTo("Pierre");
-        assertThat(testUser.getFullName()).isEqualTo("Martin");
+        assertThat(testUser.getFullName()).isEqualTo("Pierre Martin");
         assertThat(testUser.getPhoneNumber()).isEqualTo("+33612345678");
         verify(userRepository, times(1)).findByEmail("test@geolink.com");
         verify(userRepository, times(1)).save(testUser);

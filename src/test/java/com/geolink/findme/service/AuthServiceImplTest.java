@@ -1,14 +1,12 @@
 package com.geolink.findme.service;
 
 import com.geolink.findme.dto.mapper.UserMapper;
-import com.geolink.findme.dto.request.RefreshRequestDTO;
 import com.geolink.findme.dto.request.SignInRequestDTO;
 import com.geolink.findme.dto.request.SignUpRequestDTO;
 import com.geolink.findme.dto.response.AuthResponseDTO;
 import com.geolink.findme.dto.response.UserProfileDTO;
 import com.geolink.findme.entity.AccountStatus;
 import com.geolink.findme.entity.OtpPurpose;
-import com.geolink.findme.entity.RefreshToken;
 import com.geolink.findme.entity.Role;
 import com.geolink.findme.entity.User;
 import com.geolink.findme.exception.EmailAlreadyUsedException;

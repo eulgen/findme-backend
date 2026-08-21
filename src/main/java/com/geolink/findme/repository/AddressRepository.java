@@ -40,4 +40,18 @@ public interface AddressRepository extends JpaRepository<Address, Long>, JpaSpec
      */
     @Query("SELECT a FROM Address a JOIN a.users u WHERE u.id = :userId")
     Page<Address> findByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    /**
+     * Recherche paginée d'adresses filtrable par pays, ville et quartier (pour les administrateurs).
+     */
+    @Query("SELECT a FROM Address a WHERE " +
+           "(:country IS NULL OR TRIM(CAST(:country AS string)) = '' OR LOWER(a.country) LIKE LOWER(CONCAT('%', CAST(:country AS string), '%'))) AND " +
+           "(:city IS NULL OR TRIM(CAST(:city AS string)) = '' OR LOWER(a.city) LIKE LOWER(CONCAT('%', CAST(:city AS string), '%'))) AND " +
+           "(:district IS NULL OR TRIM(CAST(:district AS string)) = '' OR LOWER(a.district) LIKE LOWER(CONCAT('%', CAST(:district AS string), '%')))")
+    Page<Address> searchAddresses(
+            @Param("country") String country,
+            @Param("city") String city,
+            @Param("district") String district,
+            Pageable pageable
+    );
 }

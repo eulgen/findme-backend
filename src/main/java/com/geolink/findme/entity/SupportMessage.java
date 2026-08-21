@@ -1,14 +1,15 @@
 package com.geolink.findme.entity;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -20,57 +21,44 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 /**
- * Entité JPA représentant une Adresse géographique dans la plateforme findMe.
+ * Entité JPA représentant un message ou ticket de support client.
+ * Relation : Un User (1) <---> (N) SupportMessage.
+ * - Un utilisateur peut rédiger 1 ou plusieurs messages de support.
+ * - Un message de support est rédigé par 1 et un seul utilisateur.
  */
 @Entity
-@Table(name = "addresses")
+@Table(name = "support_messages")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Address {
+public class SupportMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "address_code", nullable = false, unique = true, length = 50)
-    private String addressCode;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @Column(nullable = false, length = 100)
-    private String country;
+    private String name;
 
-    @Column(nullable = false, length = 100)
-    private String city;
+    @Column(nullable = false, length = 255)
+    private String email;
 
-    @Column(nullable = false, length = 150)
-    private String district;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String message;
 
-    @Column(name = "postal_code", length = 20)
-    private String postalCode;
-
-    @Column(length = 150)
-    private String street;
-
-    @Column(name = "house_number", length = 50)
-    private String houseNumber;
-
-    @Column(name = "photo_url", length = 500)
-    private String photoUrl;
-
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "gps_coordinate_id", referencedColumnName = "id", unique = true)
-    private GpsCoordinate gpsCoordinate;
-
-    @ManyToMany(mappedBy = "addresses")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     @Builder.Default
-    private Set<User> users = new HashSet<>();
+    private SupportStatus status = SupportStatus.PENDING;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
@@ -97,17 +85,12 @@ public class Address {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Address address = (Address) o;
-        return Objects.equals(addressCode, address.addressCode);
+        SupportMessage that = (SupportMessage) o;
+        return Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(addressCode);
-    }
-
-    @Override
-    public String toString() {
-        return "Address{id=" + id + ", addressCode='" + addressCode + "', country='" + country + "', city='" + city + "'}";
+        return Objects.hash(id);
     }
 }

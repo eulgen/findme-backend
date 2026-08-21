@@ -85,8 +85,11 @@ public class SecurityConfig {
                                 "/api-docs/**",
                                 "/v3/api-docs/**",
                                 "/actuator/health",
-                                "/api/files/**"
+                                "/api/files/**",
+                                "/api/support"
                         ).permitAll()
+                        .requestMatchers("/api/admin/support/**").hasAnyRole("ADMIN", "SUPPORT_AGENT")
+                        .requestMatchers("/api/admin/users/**", "/api/admin/addresses/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -107,12 +110,13 @@ public class SecurityConfig {
                 .toList();
 
         configuration.setAllowedOrigins(origins);
-        // Restreint strictement aux verbes GET, POST, PUT, DELETE (avec OPTIONS pour les requêtes preflight)
+        // Restreint strictement aux verbes GET, POST, PUT, PATCH, DELETE (avec OPTIONS pour les requêtes preflight)
         configuration.setAllowedMethods(List.of(
                 HttpMethod.GET.name(),
                 HttpMethod.POST.name(),
                 HttpMethod.PUT.name(),
                 HttpMethod.DELETE.name(),
+                HttpMethod.PATCH.name(),
                 HttpMethod.OPTIONS.name()
         ));
         configuration.setAllowedHeaders(List.of("*"));

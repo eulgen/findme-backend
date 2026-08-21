@@ -146,6 +146,102 @@
           "response": []
         },
         {
+          "name": "Connexion Admin (SignIn Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.accessToken) {",
+                  "        pm.collectionVariables.set('access_token', jsonData.accessToken);",
+                  "    }",
+                  "    if (jsonData.refreshToken) {",
+                  "        pm.collectionVariables.set('refresh_token', jsonData.refreshToken);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@geolink.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/signin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signin"
+              ]
+            },
+            "description": "Connexion avec le compte administrateur par défaut (admin@geolink.com / password).\nCe compte possède le rôle ADMIN avec tous les privilèges.\nSauvegarde automatiquement `access_token` et `refresh_token` dans les variables de collection."
+          },
+          "response": []
+        },
+        {
+          "name": "Connexion Support Agent (SignIn Support)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.accessToken) {",
+                  "        pm.collectionVariables.set('access_token', jsonData.accessToken);",
+                  "    }",
+                  "    if (jsonData.refreshToken) {",
+                  "        pm.collectionVariables.set('refresh_token', jsonData.refreshToken);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"support@geolink.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/signin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signin"
+              ]
+            },
+            "description": "Connexion avec le compte Support Agent par défaut (support@geolink.com / password).\nCe compte possède le rôle SUPPORT_AGENT avec accès aux tickets de support uniquement.\nSauvegarde automatiquement `access_token` et `refresh_token` dans les variables de collection."
+          },
+          "response": []
+        },
+        {
           "name": "Rafraîchissement des tokens (Refresh)",
           "event": [
             {
@@ -537,7 +633,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"country\": \"France\",\n  \"city\": \"Paris\",\n  \"street\": \"Avenue des Champs-Élysées\",\n  \"houseNumber\": \"10\",\n  \"gps\": {\n    \"latitude\": 48.8698,\n    \"longitude\": 2.3075\n  }\n}"
+              "raw": "{\n  \"country\": \"Cameroun\",\n  \"city\": \"Douala\",\n  \"district\": \"Bonanjo\",\n  \"postalCode\": \"BP123\",\n  \"street\": \"Avenue de la Liberté\",\n  \"houseNumber\": \"10\",\n  \"gps\": {\n    \"latitude\": 4.0511,\n    \"longitude\": 9.7679\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/addresses",
@@ -549,7 +645,7 @@
                 "addresses"
               ]
             },
-            "description": "Crée une nouvelle adresse et la rattache à l'utilisateur (blocage strict à 4 adresses max)"
+            "description": "Crée une nouvelle adresse et la rattache à l'utilisateur (blocage strict à 4 adresses max). Les champs obligatoires sont : country, city, district, street et gps. Le postalCode est optionnel."
           }
         },
         {
@@ -592,7 +688,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"country\": \"France\",\n  \"city\": \"Paris\",\n  \"street\": \"Rue de Rivoli\",\n  \"houseNumber\": \"20\",\n  \"gps\": {\n    \"latitude\": 48.8566,\n    \"longitude\": 2.3522\n  }\n}"
+              "raw": "{\n  \"country\": \"Cameroun\",\n  \"city\": \"Douala\",\n  \"district\": \"Akwa\",\n  \"postalCode\": \"BP456\",\n  \"street\": \"Rue de la Joie\",\n  \"houseNumber\": \"20\",\n  \"gps\": {\n    \"latitude\": 4.0511,\n    \"longitude\": 9.7500\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/addresses/1",
@@ -736,6 +832,226 @@
               ]
             },
             "description": "Récupère et affiche l'image d'adresse téléversée. Endpoint public (ne nécessite pas de token Authorization). La variable 'uploaded_filename' est automatiquement remplie après l'upload de photo d'adresse."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Support & Administration",
+      "description": "Endpoints de gestion du support client et d'administration générale (vue utilisateurs et adresses).",
+      "item": [
+        {
+          "name": "Envoi d'un message de support (Public)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jean Dupont\",\n  \"email\": \"user@example.com\",\n  \"message\": \"Bonjour, j'ai un problème avec la géolocalisation de mon adresse.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/support",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "support"
+              ]
+            },
+            "description": "Formulaire public d'envoi d'une demande de support. Si l'email correspond à un utilisateur existant, la demande lui est automatiquement rattachée."
+          },
+          "response": []
+        },
+        {
+          "name": "Liste des messages de support (Admin / Support Agent)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/support?status=PENDING&page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "support"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Liste paginée des tickets de support, filtrable par statut (PENDING ou PROCESSED). Accessible par ADMIN et SUPPORT_AGENT."
+          },
+          "response": []
+        },
+        {
+          "name": "Traiter un message de support (Admin / Support Agent)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PROCESSED\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/support/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "support",
+                "1"
+              ]
+            },
+            "description": "Permet de modifier le statut d'un ticket de support (ex: PENDING -> PROCESSED). Accessible par ADMIN et SUPPORT_AGENT."
+          },
+          "response": []
+        },
+        {
+          "name": "Liste des utilisateurs (Admin uniquement)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users?search=Jean&page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Jean"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Liste paginée de tous les utilisateurs avec recherche par nom/email. Réservé exclusivement au rôle ADMIN (retourne 403 Forbidden pour SUPPORT_AGENT)."
+          },
+          "response": []
+        },
+        {
+          "name": "Modifier le rôle d'un utilisateur (Admin uniquement)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleName\": \"SUPPORT_AGENT\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/1/role",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "1",
+                "role"
+              ]
+            },
+            "description": "Permet à un administrateur (rôle ADMIN) de modifier le rôle (USER, ADMIN, SUPPORT_AGENT) d'un utilisateur."
+          },
+          "response": []
+        },
+        {
+          "name": "Vue globale des adresses (Admin uniquement)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/addresses?city=Douala&page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "addresses"
+              ],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "Douala"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Vue agrégée et paginée de toutes les adresses avec filtres (pays, ville, quartier). Réservé au rôle ADMIN."
           },
           "response": []
         }

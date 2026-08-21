@@ -31,11 +31,15 @@ public class AddressRequestDTO {
     @Size(max = 100, message = "La ville ne peut pas dépasser 100 caractères")
     private String city;
 
+    @NotBlank(message = "Le quartier est obligatoire")
+    @Size(max = 150, message = "Le quartier ne peut pas dépasser 150 caractères")
+    private String district;
+
     @NotBlank(message = "La rue est obligatoire")
     @Size(max = 150, message = "La rue ne peut pas dépasser 150 caractères")
     private String street;
 
-    @Size(max = 4, message = "Le code postal ne peut pas dépasser 4 caractères")
+    @Size(max = 20, message = "Le code postal ne peut pas dépasser 20 caractères")
     private String postalCode;
 
     @NotBlank(message = "L'URL de la photo est obligatoire")

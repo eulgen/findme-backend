@@ -64,6 +64,15 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    @ExceptionHandler(SupportMessageNotFoundException.class)
+    public ProblemDetail handleSupportMessageNotFound(SupportMessageNotFoundException ex, HttpServletRequest request) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        pd.setType(URI.create("https://api.findme.geolink.com/errors/support-message-not-found"));
+        pd.setTitle("Message de support non trouvé");
+        pd.setInstance(URI.create(request.getRequestURI()));
+        return pd;
+    }
+
     @ExceptionHandler(MaxAddressLimitExceededException.class)
     public ProblemDetail handleMaxAddressLimitExceeded(MaxAddressLimitExceededException ex, HttpServletRequest request) {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
