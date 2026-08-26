@@ -5,14 +5,14 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.1.0</version>
+		<version>3.4.1</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.example</groupId>
-	<artifactId>findme</artifactId>
+	<groupId>com.geolink.findme</groupId>
+	<artifactId>auth-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>findme</name>
-	<description>FindMe - API REST Spring Boot pour la gestion des adresses GeoLink</description>
+	<name>auth-service</name>
+	<description>findMe Auth Service - Service d'authentification et gestion des utilisateurs</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -28,11 +28,13 @@
 	</scm>
 
 	<properties>
-		<java.version>26</java.version>
+		<java.version>21</java.version>
 		<!-- Version JJWT pour la generation et validation des tokens JWT -->
 		<jjwt.version>0.12.6</jjwt.version>
 		<!-- Version Springdoc pour la documentation Swagger/OpenAPI -->
 		<springdoc.version>2.8.9</springdoc.version>
+		<!-- Version Lombok compatible avec JDK 21+ -->
+		<lombok.version>1.18.38</lombok.version>
 	</properties>
 
 	<dependencies>
@@ -44,7 +46,7 @@
 		<!-- Spring MVC : controllers REST (@RestController, @RequestMapping) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc</artifactId>
+			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
 		<!-- Spring Data JPA : repositories, entites (@Entity, @Repository) -->
@@ -65,6 +67,12 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 
+		<!-- OAuth2 / OIDC Client : Google et Apple Sign-In -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-client</artifactId>
+		</dependency>
+
 		<!-- Spring Actuator : endpoints /health, /info, /metrics -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -77,15 +85,39 @@
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
 
+		<!-- Spring Thymeleaf : templates d'emails HTML -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+
+		<!-- Lombok : simplification des constructeurs, getters, setters, builders et logger -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>${lombok.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
 		<!-- ===================================================== -->
 		<!--                     DATABASE                          -->
 		<!-- ===================================================== -->
 
-		<!-- MySQL Connector : driver JDBC pour la base MySQL dockerisee -->
+		<!-- PostgreSQL JDBC Driver : driver pour la base PostgreSQL dockerisee -->
 		<dependency>
-			<groupId>com.mysql</groupId>
-			<artifactId>mysql-connector-j</artifactId>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Flyway Core & Support PostgreSQL : gestion des migrations de base de donnees -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 
 		<!-- ===================================================== -->
@@ -127,24 +159,7 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- ===================================================== -->
-		<!--                    UTILITIES                          -->
-		<!-- ===================================================== -->
 
-		<!-- Lombok : reduction du boilerplate (@Data, @Builder, @Slf4j, etc.) -->
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-		</dependency>
-
-		<!-- Spring DevTools : rechargement a chaud en mode developpement -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-devtools</artifactId>
-			<scope>runtime</scope>
-			<optional>true</optional>
-		</dependency>
 
 		<!-- ===================================================== -->
 		<!--                       TESTS                           -->
@@ -171,68 +186,76 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- H2 : base de donnees en memoire uniquement pour les tests (@DataJpaTest) -->
+		<!-- H2 database for in-memory integration testing -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
 
+		<!-- Testcontainers PostgreSQL -->
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- Spring Dotenv : chargement automatique du fichier .env au démarrage -->
+		<dependency>
+			<groupId>me.paulschwarz</groupId>
+			<artifactId>spring-dotenv</artifactId>
+			<version>4.0.0</version>
+		</dependency>
+
 	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-bom</artifactId>
+				<version>1.20.4</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
 		<plugins>
 			<!-- Spring Boot Maven Plugin : package en fat-jar executable -->
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<!-- Exclure Lombok du jar final (uniquement necessaire a la compilation) -->
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
+					<layers>
+						<enabled>true</enabled>
+					</layers>
 				</configuration>
 			</plugin>
-
-			<!-- Maven Compiler Plugin : configure le processeur d'annotations Lombok -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>default-compile</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-						<configuration>
-							<annotationProcessorPaths>
-								<path>
-									<groupId>org.projectlombok</groupId>
-									<artifactId>lombok</artifactId>
-								</path>
-							</annotationProcessorPaths>
-						</configuration>
-					</execution>
-					<execution>
-						<id>default-testCompile</id>
-						<phase>test-compile</phase>
-						<goals>
-							<goal>testCompile</goal>
-						</goals>
-						<configuration>
-							<annotationProcessorPaths>
-								<path>
-									<groupId>org.projectlombok</groupId>
-									<artifactId>lombok</artifactId>
-								</path>
-							</annotationProcessorPaths>
-						</configuration>
-					</execution>
-				</executions>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>-XX:+EnableDynamicAgentLoading</argLine>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

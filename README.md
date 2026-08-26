@@ -61,7 +61,7 @@ Le projet suit une architecture en couches typique de Spring Boot :
 - **Controller** : Expose les endpoints REST (`AuthController`, `PlaceController`)
 - **Service** : Contient la logique métier (`AuthService`, `PlaceService`)
 - **Repository** : Interface JPA pour l'accès aux données (`UserRepository`, `PlaceRepository`)
-- **Entity** : Entités JPA mappées aux tables MySQL (`User`, `Place`)
+- **Entity** : Entités JPA mappées aux tables PostgreSQL (`User`, `Place`)
 - **DTO** : Objets de transfert de données pour les requêtes/réponses
 - **Security** : Configuration Spring Security avec filtre JWT
 - **Exception** : Gestion centralisée des exceptions
@@ -79,7 +79,7 @@ Le projet suit une architecture en couches typique de Spring Boot :
 - **Spring Mail** : Envoi d'emails
 
 ### Base de données
-- **MySQL 8.4** : Base de données relationnelle (dockerisée)
+- **PostgreSQL 16** : Base de données relationnelle (dockerisée)
 - **Hibernate** : ORM JPA
 
 ### Sécurité
@@ -128,7 +128,7 @@ findme/
 │           ├── repository/       # Tests des repositories
 │           ├── security/         # Tests JWT
 │           └── service/          # Tests des services
-├── docker-compose.yml            # Configuration MySQL
+├── docker-compose.yml            # Configuration PostgreSQL
 ├── pom.xml                       # Dépendances Maven
 ├── mvw, mvw.cmd                  # Wrapper Maven
 └── README.md
@@ -138,7 +138,7 @@ findme/
 
 - **Java 26** ou supérieur
 - **Maven 3.6+** (ou utiliser le wrapper inclus)
-- **Docker** et **Docker Compose** (pour MySQL)
+- **Docker** et **Docker Compose** (pour PostgreSQL)
 - **Git** (optionnel)
 
 ## 📦 Installation et lancement
@@ -150,17 +150,17 @@ git clone <repository-url>
 cd findme
 ```
 
-### 2. Lancer la base de données MySQL
+### 2. Lancer la base de données PostgreSQL
 
 ```bash
 docker-compose up -d
 ```
 
-Cela démarre un conteneur MySQL 8.4 avec les configurations suivantes :
+Cela démarre un conteneur PostgreSQL 16 avec les configurations suivantes :
 - Base de données : `findme`
 - Utilisateur : `findme_user`
 - Mot de passe : `findme_pwd`
-- Port : `3306`
+- Port : `5432`
 
 ### 3. Lancer l'application avec Maven
 
@@ -199,7 +199,7 @@ L'application démarre sur le port `8080` par défaut. Vous pouvez vérifier :
 
 ### 5. Arrêter l'application
 
-- **Arrêter MySQL** : `docker-compose down`
+- **Arrêter PostgreSQL** : `docker-compose down`
 - **Arrêter l'application** : `Ctrl+C` dans le terminal
 
 ## 📚 Documentation API
@@ -270,16 +270,16 @@ La configuration de l'application se trouve dans `src/main/resources/application
 # Serveur
 server.port=8080
 
-# Base de données MySQL
-spring.datasource.url=jdbc:mysql://localhost:3306/findme
+# Base de données PostgreSQL
+spring.datasource.url=jdbc:postgresql://localhost:5432/findme
 spring.datasource.username=findme_user
 spring.datasource.password=findme_pwd
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.driver-class-name=org.postgresql.Driver
 
 # JPA/Hibernate
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
 # JWT
 jwt.secret=votre-secret-key

@@ -1,0 +1,113 @@
+spring:
+  application:
+    name: auth-service
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: authservice
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+
+  flyway:
+    enabled: true
+    schemas: authservice
+    create-schemas: true
+    default-schema: authservice
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:mock-google-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:mock-google-client-secret}
+            scope: openid, email, profile
+          apple:
+            client-id: ${APPLE_CLIENT_ID:com.geolink.findme.client}
+            client-secret: ${APPLE_CLIENT_SECRET:mock-apple-client-secret}
+            authorization-grant-type: authorization_code
+            scope: openid, name, email
+            client-authentication-method: client_secret_post
+            redirect-uri: "{baseUrl}/login/oauth2/code/apple"
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+            user-name-attribute: sub
+          apple:
+            authorization-uri: https://appleid.apple.com/auth/authorize
+            token-uri: https://appleid.apple.com/auth/token
+            jwk-set-uri: https://appleid.apple.com/auth/keys
+            user-name-attribute: sub
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+securite:
+  jwt:
+    secret: ${JWT_SECRET}
+    duree-acces-minutes: ${JWT_ACCESS_MINUTES:15}
+    duree-rafraichissement-jours: ${JWT_REFRESH_DAYS:30}
+
+app:
+  storage:
+    location: ${STORAGE_LOCATION:uploads}
+  backend:
+    base-url: ${BACKEND_BASE_URL:http://localhost:8080}
+  otp:
+    ttl-minutes: 10
+  mail:
+    from: "findMe <no-reply@findme.geolink.com>"
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5173}
+
+apple:
+  team-id: ${APPLE_TEAM_ID:mock-team-id}
+  client-id: ${APPLE_CLIENT_ID:com.geolink.findme.client}
+  key-id: ${APPLE_KEY_ID:mock-key-id}
+  private-key-path: ${APPLE_PRIVATE_KEY_PATH:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method

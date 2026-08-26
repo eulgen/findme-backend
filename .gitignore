@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+###CONFIDENTIAL FILES###
+api-docs.json
+client_secret_*.json
+.env
+run_springboot.sh
+test_*.py
+uploads/
