@@ -1,4 +1,4 @@
-package com.geolink.findme.service;
+package com.geolink.findme.service.auth;
 
 import com.geolink.findme.dto.mapper.UserMapper;
 import com.geolink.findme.dto.request.SignInRequestDTO;
@@ -15,7 +15,6 @@ import com.geolink.findme.repository.RoleRepository;
 import com.geolink.findme.repository.UserRepository;
 import com.geolink.findme.security.JwtService;
 import com.geolink.findme.security.UserPrincipal;
-import com.geolink.findme.service.auth.AuthServiceImpl;
 import com.geolink.findme.service.emailService.EmailService;
 import com.geolink.findme.service.otpService.OtpService;
 import com.geolink.findme.service.passwordService.RefreshTokenService;

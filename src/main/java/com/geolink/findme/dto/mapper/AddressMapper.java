@@ -80,6 +80,7 @@ public class AddressMapper {
                 .street(address.getStreet())
                 .houseNumber(address.getHouseNumber())
                 .photoUrl(photoPublicUrl)
+                .status(address.getStatus())
                 .gps(toDTO(address.getGpsCoordinate()))
                 .createdAt(address.getCreatedAt())
                 .updatedAt(address.getUpdatedAt())

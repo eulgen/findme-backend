@@ -32,4 +32,6 @@ public class SignUpRequestDTO {
 
     @NotBlank(message = "Le nom complet est obligatoire")
     private String fullName;
+
+    private String addressCode;
 }

@@ -42,10 +42,10 @@ public class SecurityConfig {
     private final OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
+    @Value("${app.cors.allowed-origins:http://localhost:5173,https://localhost:3000,http://localhost:3000}")
     private String allowedOrigins;
 
-    @Value("${app.frontend.base-url:http://localhost:5173}")
+    @Value("${app.frontend.base-url:http://localhost:5173,https://localhost:3000,http://localhost:3000}")
     private String frontendBaseUrl;
 
     public SecurityConfig(
@@ -76,7 +76,9 @@ public class SecurityConfig {
                                 "/api/auth/resend-otp",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
+                                "/api/auth/google",
                                 "/api/auth/google/**",
+                                "/api/auth/apple",
                                 "/api/auth/apple/**",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
@@ -86,7 +88,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/actuator/health",
                                 "/api/files/**",
-                                "/api/support"
+                                "/api/support",
+                                "/api/public/addresses/**"
                         ).permitAll()
                         .requestMatchers("/api/admin/support/**").hasAnyRole("ADMIN", "SUPPORT_AGENT")
                         .requestMatchers("/api/admin/users/**", "/api/admin/addresses/**").hasRole("ADMIN")

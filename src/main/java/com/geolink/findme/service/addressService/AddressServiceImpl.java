@@ -209,6 +209,52 @@ public class AddressServiceImpl implements AddressService {
         return addressMapper.toExportDTO(address, user, storageService);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public AddressResponseDTO getAddressByCode(String addressCode) {
+        Address address = addressRepository.findByAddressCodeIgnoreCase(addressCode)
+                .orElseThrow(() -> new AddressNotFoundException("Adresse non trouvée avec le code : " + addressCode));
+        return addressMapper.toDTO(address, storageService);
+    }
+
+    @Override
+    @Transactional
+    public AddressResponseDTO createPublicAddress(AddressRequestDTO requestDTO) {
+        Address address = addressMapper.toEntity(requestDTO);
+        address.setAddressCode(generateUniqueAddressCode());
+
+        Address savedAddress = addressRepository.save(address);
+        log.info("Adresse publique créée avec succès ID: {}, Code: {}", savedAddress.getId(), savedAddress.getAddressCode());
+
+        return addressMapper.toDTO(savedAddress, storageService);
+    }
+
+    @Override
+    @Transactional
+    public AddressResponseDTO linkAddressToUser(User user, String addressCode) {
+        long currentCount = addressRepository.countByUsers_Id(user.getId());
+        if (currentCount >= MAX_ADDRESSES_PER_USER) {
+            log.warn("Tentative de raccordement d'une adresse refusée pour l'utilisateur ID: {} (limite atteinte)", user.getId());
+            throw new MaxAddressLimitExceededException(
+                    "Vous possédez déjà " + currentCount + " adresses. La limite maximale est fixée à " + MAX_ADDRESSES_PER_USER + " adresses par utilisateur."
+            );
+        }
+
+        Address address = addressRepository.findByAddressCodeIgnoreCase(addressCode)
+                .orElseThrow(() -> new AddressNotFoundException("Adresse non trouvée avec le code : " + addressCode));
+
+        boolean alreadyLinked = address.getUsers().stream().anyMatch(u -> u.getId().equals(user.getId()));
+        if (!alreadyLinked) {
+            address.getUsers().add(user);
+            user.getAddresses().add(address);
+            addressRepository.save(address);
+            userRepository.save(user);
+            log.info("Adresse Code: {} liée avec succès à l'utilisateur ID: {}", addressCode, user.getId());
+        }
+
+        return addressMapper.toDTO(address, storageService);
+    }
+
     private Address findAddressAndCheckOwnership(User user, Long addressId) {
         Address address = addressRepository.findById(addressId)
                 .orElseThrow(() -> new AddressNotFoundException("Adresse non trouvée avec l'identifiant : " + addressId));

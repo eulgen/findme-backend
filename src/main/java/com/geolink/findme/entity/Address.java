@@ -3,6 +3,8 @@ package com.geolink.findme.entity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -63,6 +65,11 @@ public class Address {
 
     @Column(name = "photo_url", length = 500)
     private String photoUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
+    private AddressStatus status = AddressStatus.EN_ATTENTE;
 
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "gps_coordinate_id", referencedColumnName = "id", unique = true)

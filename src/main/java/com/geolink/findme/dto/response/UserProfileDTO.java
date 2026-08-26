@@ -22,6 +22,7 @@ public class UserProfileDTO {
     private String email;
     private String fullName;
     private String phoneNumber;
+    private String profileImage;
     private String role;
     private String status;
     private Instant createdAt;

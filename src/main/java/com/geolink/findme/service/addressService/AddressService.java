@@ -55,4 +55,19 @@ public interface AddressService {
      * Génère et retourne le DTO d'export PDF complet pour le rendu frontend.
      */
     AddressExportDTO exportAddressPdfData(User user, Long addressId);
+
+    /**
+     * Récupère le détail d'une adresse à partir de son code d'adresse (accès public).
+     */
+    AddressResponseDTO getAddressByCode(String addressCode);
+
+    /**
+     * Crée une adresse de manière anonyme sans la rattacher immédiatement à un compte utilisateur.
+     */
+    AddressResponseDTO createPublicAddress(AddressRequestDTO requestDTO);
+
+    /**
+     * Associe une adresse existante (par son addressCode) au compte de l'utilisateur connecté.
+     */
+    AddressResponseDTO linkAddressToUser(User user, String addressCode);
 }

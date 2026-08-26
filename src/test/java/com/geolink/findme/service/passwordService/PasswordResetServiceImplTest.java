@@ -1,12 +1,10 @@
-package com.geolink.findme.service;
+package com.geolink.findme.service.passwordService;
 
 import com.geolink.findme.entity.OtpPurpose;
 import com.geolink.findme.entity.User;
 import com.geolink.findme.repository.UserRepository;
 import com.geolink.findme.service.emailService.EmailService;
 import com.geolink.findme.service.otpService.OtpService;
-import com.geolink.findme.service.passwordService.PasswordResetServiceImpl;
-import com.geolink.findme.service.passwordService.RefreshTokenService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

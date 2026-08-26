@@ -1,11 +1,10 @@
-package com.geolink.findme.service;
+package com.geolink.findme.service.passwordService;
 
 import com.geolink.findme.entity.RefreshToken;
 import com.geolink.findme.entity.User;
 import com.geolink.findme.exception.InvalidOrExpiredTokenException;
 import com.geolink.findme.repository.RefreshTokenRepository;
 import com.geolink.findme.security.JwtService;
-import com.geolink.findme.service.passwordService.RefreshTokenServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -7,7 +7,12 @@
         <div style="font-size: 32px; letter-spacing: 8px; font-weight: bold; color: #0d6e5c; text-align: center; margin: 24px 0;">
             <span th:text="${otpCode}">123456</span>
         </div>
-        <p style="color: #6b7280; font-size: 13px;">
+        <div style="text-align: center; margin: 28px 0;" th:if="${actionUrl}">
+            <a th:href="${actionUrl}"
+               style="background-color: #0d6e5c; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px; display: inline-block;"
+               th:text="${actionText}">Vérifier mon compte</a>
+        </div>
+        <p style="color: #6b7280; font-size: 13px; margin-top: 24px;">
             Ce code expire dans <span th:text="${ttlMinutes}">10</span> minutes.
             Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.
         </p>
