@@ -1,6 +1,7 @@
 package com.geolink.findme.controller;
 
 import com.geolink.findme.dto.request.RoleUpdateDTO;
+import com.geolink.findme.dto.response.AddressResponseDTO;
 import com.geolink.findme.dto.response.UserProfileDTO;
 import com.geolink.findme.service.adminService.AdminService;
 
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Contrôleur REST d'administration pour la consultation de tous les utilisateurs.
+ * Contrôleur REST d'administration pour la gestion des utilisateurs.
  * Accès réservé exclusivement au rôle ADMIN.
  */
 @RestController
@@ -68,5 +69,20 @@ public class AdminUserController {
     ) {
         adminService.updateUserRole(userId, roleUpdateDTO.getRoleName());
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{userId}/addresses")
+    @Operation(summary = "Lister les adresses d'un utilisateur (Admin)", description = "Retourne la liste paginée des adresses associées à un utilisateur spécifique.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Liste des adresses de l'utilisateur récupérée avec succès"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Accès refusé - Réservé aux administrateurs (ADMIN)"),
+            @ApiResponse(responseCode = "404", description = "Utilisateur non trouvé")
+    })
+    public ResponseEntity<Page<AddressResponseDTO>> getAddressesByUserId(
+            @PathVariable Long userId,
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
+    ) {
+        return ResponseEntity.ok(adminService.getAddressesByUserId(userId, pageable));
     }
 }

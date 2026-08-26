@@ -11,9 +11,12 @@ import com.geolink.findme.entity.OtpPurpose;
 import com.geolink.findme.entity.RefreshToken;
 import com.geolink.findme.entity.Role;
 import com.geolink.findme.entity.User;
+import com.geolink.findme.entity.Address;
+import com.geolink.findme.exception.AddressNotFoundException;
 import com.geolink.findme.exception.EmailAlreadyUsedException;
 import com.geolink.findme.exception.InvalidCredentialsException;
 import com.geolink.findme.exception.InvalidOrExpiredTokenException;
+import com.geolink.findme.repository.AddressRepository;
 import com.geolink.findme.repository.RoleRepository;
 import com.geolink.findme.repository.UserRepository;
 import com.geolink.findme.security.JwtService;
@@ -41,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final AddressRepository addressRepository;
     private final RefreshTokenService refreshTokenService;
     private final JwtService jwtService;
     private final UserMapper userMapper;
@@ -71,6 +75,14 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         user.setAccountVerified(false);
+
+        if (dto.getAddressCode() != null && !dto.getAddressCode().isBlank()) {
+            Address address = addressRepository.findByAddressCodeIgnoreCase(dto.getAddressCode())
+                    .orElseThrow(() -> new AddressNotFoundException("Adresse non trouvée avec le code : " + dto.getAddressCode()));
+            address.getUsers().add(user);
+            user.getAddresses().add(address);
+        }
+
         User savedUser = userRepository.save(user);
 
         String otp = otpService.generate(savedUser, OtpPurpose.ACCOUNT_VERIFICATION);

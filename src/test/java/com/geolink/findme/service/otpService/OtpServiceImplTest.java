@@ -1,11 +1,10 @@
-package com.geolink.findme.service;
+package com.geolink.findme.service.otpService;
 
 import com.geolink.findme.entity.OtpCode;
 import com.geolink.findme.entity.OtpPurpose;
 import com.geolink.findme.entity.User;
 import com.geolink.findme.exception.InvalidOrExpiredTokenException;
 import com.geolink.findme.repository.OtpCodeRepository;
-import com.geolink.findme.service.otpService.OtpServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

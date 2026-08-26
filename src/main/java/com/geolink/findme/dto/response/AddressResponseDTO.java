@@ -1,5 +1,6 @@
 package com.geolink.findme.dto.response;
 
+import com.geolink.findme.entity.AddressStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,6 +28,7 @@ public class AddressResponseDTO {
     private String street;
     private String houseNumber;
     private String photoUrl;
+    private AddressStatus status;
     private GpsCoordinateDTO gps;
     private Instant createdAt;
     private Instant updatedAt;

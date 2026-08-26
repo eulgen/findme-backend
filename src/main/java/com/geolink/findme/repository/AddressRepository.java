@@ -30,6 +30,11 @@ public interface AddressRepository extends JpaRepository<Address, Long>, JpaSpec
     boolean existsByAddressCode(String addressCode);
 
     /**
+     * Recherche une adresse unique par son code d'adresse (insensible à la casse).
+     */
+    Optional<Address> findByAddressCodeIgnoreCase(String addressCode);
+
+    /**
      * Recherche une adresse par son ID et l'ID de l'utilisateur propriétaire.
      */
     @Query("SELECT a FROM Address a JOIN a.users u WHERE a.id = :addressId AND u.id = :userId")

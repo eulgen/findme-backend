@@ -180,6 +180,23 @@ public class AddressController {
         return ResponseEntity.ok(addressService.exportAddressPdfData(user, id));
     }
 
+    @PostMapping("/link/{addressCode}")
+    @Operation(summary = "Lier une adresse existante à son compte", description = "Rattache une adresse identifiée par son addressCode au compte de l'utilisateur connecté (dans la limite de 4 adresses max)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Adresse liée avec succès"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Adresse non trouvée"),
+            @ApiResponse(responseCode = "409", description = "Limite maximale de 4 adresses atteinte pour cet utilisateur")
+    })
+    public ResponseEntity<AddressResponseDTO> linkAddress(
+            @PathVariable String addressCode,
+            Principal principal,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        User user = resolveUser(principal, userPrincipal);
+        return ResponseEntity.ok(addressService.linkAddressToUser(user, addressCode));
+    }
+
     private User resolveUser(Principal principal, UserPrincipal userPrincipal) {
         if (userPrincipal != null && userPrincipal.getUser() != null) {
             return userRepository.findById(userPrincipal.getUser().getId())

@@ -22,7 +22,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"Password123\",\n  \"fullName\": \"John Doe\"\n}"
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"Password123\",\n  \"fullName\": \"John Doe\",\n  \"addressCode\": \"ADR-2026-X1Y2\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/signup",
@@ -35,7 +35,7 @@
                 "signup"
               ]
             },
-            "description": "Création d'un nouveau compte utilisateur non vérifié et envoi d'un code OTP à 6 chiffres par email.\n- Mot de passe obligatoire: min 8 caractères, au moins 1 majuscule et 1 chiffre.\n- Statut de retour attendu: 201 Created"
+            "description": "Création d'un nouveau compte utilisateur non vérifié et envoi d'un code OTP à 6 chiffres par email.\n- Mot de passe obligatoire: min 8 caractères, au moins 1 majuscule et 1 chiffre.\n- Champ optionnel: addressCode pour rattacher automatiquement une adresse anonyme créée au préalable lors de la souscription.\n- Statut de retour attendu: 201 Created"
           },
           "response": []
         },
@@ -577,6 +577,42 @@
             "description": "Met à jour le prénom, le nom et le numéro de téléphone (optionnel) de l'utilisateur connecté."
           },
           "response": []
+        },
+        {
+          "name": "Upload Image de Profil (Upload Profile Image)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/profile-image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me",
+                "profile-image"
+              ]
+            },
+            "description": "Téléverse ou remplace l'image de profil de l'utilisateur connecté.\nFormats acceptés : JPEG, PNG, WEBP. Taille maximale : 5 Mo."
+          },
+          "response": []
         }
       ]
     },
@@ -807,6 +843,82 @@
             },
             "description": "Retourne l'adresse formatée, la position GPS, le code d'adresse et les infos utilisateur pour la génération du PDF côté frontend"
           }
+        },
+        {
+          "name": "Créer une adresse anonyme (Create Public Address)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"Cameroun\",\n  \"city\": \"Douala\",\n  \"district\": \"Akwa\",\n  \"postalCode\": \"BP123\",\n  \"street\": \"Rue Joffre\",\n  \"houseNumber\": \"45\",\n  \"photoUrl\": \"https://cdn.findme.com/photos/douala.jpg\",\n  \"gps\": {\n    \"latitude\": 4.0511,\n    \"longitude\": 9.7085\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/public/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "addresses"
+              ]
+            },
+            "description": "Crée une nouvelle adresse de manière anonyme sans compte utilisateur et retourne son addressCode unique. Accessible publiquement sans authentification."
+          },
+          "response": []
+        },
+        {
+          "name": "Consulter une adresse par son code (Get Public Address By Code)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public/addresses/ADR-2026-X1Y2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "addresses",
+                "ADR-2026-X1Y2"
+              ]
+            },
+            "description": "Permet à tout utilisateur non connecté de récupérer l'ensemble des détails d'une adresse via son addressCode unique. Insensible à la casse."
+          },
+          "response": []
+        },
+        {
+          "name": "Lier une adresse existante à son compte (Link Address To User)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/addresses/link/ADR-2026-X1Y2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "addresses",
+                "link",
+                "ADR-2026-X1Y2"
+              ]
+            },
+            "description": "Rattache une adresse existante ou créée anonymement (par son addressCode) au compte de l'utilisateur connecté (dans la limite de 4 adresses max)."
+          },
+          "response": []
         }
       ]
     },
@@ -832,6 +944,27 @@
               ]
             },
             "description": "Récupère et affiche l'image d'adresse téléversée. Endpoint public (ne nécessite pas de token Authorization). La variable 'uploaded_filename' est automatiquement remplie après l'upload de photo d'adresse."
+          },
+          "response": []
+        },
+        {
+          "name": "Accéder à une photo de profil (Get Public Profile Image)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/files/profiles/{{uploaded_profile_filename}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "files",
+                "profiles",
+                "{{uploaded_profile_filename}}"
+              ]
+            },
+            "description": "Récupère et affiche l'image de profil téléversée. Endpoint public (ne nécessite pas de token Authorization)."
           },
           "response": []
         }
@@ -1052,6 +1185,131 @@
               ]
             },
             "description": "Vue agrégée et paginée de toutes les adresses avec filtres (pays, ville, quartier). Réservé au rôle ADMIN."
+          },
+          "response": []
+        },
+        {
+          "name": "Valider / modifier le statut d'une adresse (Admin uniquement)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"VALIDE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/addresses/1/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "addresses",
+                "1",
+                "status"
+              ]
+            },
+            "description": "Permet à l'administrateur de modifier le statut d'une adresse (valeurs autorisées: EN_ATTENTE, VALIDE, NON_VALIDE)."
+          },
+          "response": []
+        },
+        {
+          "name": "Supprimer une adresse (Admin uniquement)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/addresses/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "addresses",
+                "1"
+              ]
+            },
+            "description": "Permet à un administrateur de supprimer définitivement une adresse."
+          },
+          "response": []
+        },
+        {
+          "name": "Trouver les informations utilisateur d'une adresse (Admin uniquement)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/addresses/1/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "addresses",
+                "1",
+                "users"
+              ]
+            },
+            "description": "Retourne les informations (profil) de l'utilisateur propriétaire d'une adresse."
+          },
+          "response": []
+        },
+        {
+          "name": "Lister les adresses d'un utilisateur (Admin uniquement)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/1/addresses?page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "1",
+                "addresses"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Retourne la liste paginée des adresses associées à un utilisateur spécifique."
           },
           "response": []
         }

@@ -3,6 +3,7 @@ package com.geolink.findme.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -115,9 +116,18 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Le corps de la requête (JSON) est obligatoire ou mal formé");
+        pd.setType(URI.create("https://api.findme.geolink.com/errors/malformed-json"));
+        pd.setTitle("Corps de requête invalide");
+        pd.setInstance(URI.create(request.getRequestURI()));
+        return pd;
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGenericException(Exception ex, HttpServletRequest request) {
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Une erreur interne s'est produite");
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage() != null ? ex.getMessage() : ex.toString());
         pd.setType(URI.create("https://api.findme.geolink.com/errors/internal-error"));
         pd.setTitle("Erreur serveur");
         pd.setInstance(URI.create(request.getRequestURI()));

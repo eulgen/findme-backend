@@ -21,4 +21,6 @@ public class UpdateProfileRequestDTO {
     private String fullName;
 
     private String phoneNumber;
+
+    private String profileImage;
 }

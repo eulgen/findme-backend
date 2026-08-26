@@ -7,6 +7,8 @@ import com.geolink.findme.dto.response.UserProfileDTO;
 import com.geolink.findme.entity.Address;
 import com.geolink.findme.entity.User;
 import com.geolink.findme.entity.Role;
+import com.geolink.findme.entity.AddressStatus;
+import com.geolink.findme.exception.AddressNotFoundException;
 import com.geolink.findme.exception.RoleNotFoundException;
 import com.geolink.findme.exception.UserNotFoundException;
 import com.geolink.findme.repository.AddressRepository;
@@ -21,6 +23,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * Implémentation du service d'administration.
@@ -66,5 +70,68 @@ public class AdminServiceImpl implements AdminService {
         user.getRoles().clear();
         user.getRoles().add(newRole);
         userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public AddressResponseDTO updateAddressStatus(Long addressId, AddressStatus status) {
+        log.info("Administration : Mise à jour du statut de l'adresse ID={} vers le statut {}", addressId, status);
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(() -> new AddressNotFoundException("Adresse non trouvée avec l'ID: " + addressId));
+
+        address.setStatus(status);
+        Address updatedAddress = addressRepository.save(address);
+        log.info("Administration : Statut de l'adresse ID={} mis à jour avec succès en {}", addressId, status);
+        return addressMapper.toDTO(updatedAddress, storageService);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAddress(Long addressId) {
+        log.info("Administration : Demande de suppression de l'adresse ID={}", addressId);
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(() -> new AddressNotFoundException("Adresse non trouvée avec l'ID: " + addressId));
+
+        // Dissocier l'adresse de ses utilisateurs
+        for (User user : address.getUsers()) {
+            user.getAddresses().remove(address);
+        }
+        address.getUsers().clear();
+
+        // Supprimer la photo si elle existe
+        if (address.getPhotoUrl() != null && !address.getPhotoUrl().isBlank()) {
+            try {
+                storageService.delete(address.getPhotoUrl(), "addresses");
+            } catch (Exception e) {
+                log.warn("Administration : Impossible de supprimer la photo de l'adresse ID={} : {}", addressId, e.getMessage());
+            }
+        }
+
+        addressRepository.delete(address);
+        log.info("Administration : Adresse ID={} supprimée avec succès", addressId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<AddressResponseDTO> getAddressesByUserId(Long userId, Pageable pageable) {
+        log.info("Administration : Consultation des adresses pour l'utilisateur ID={}", userId);
+        if (!userRepository.existsById(userId)) {
+            throw new UserNotFoundException("Utilisateur introuvable avec l'ID: " + userId);
+        }
+        Page<Address> addresses = addressRepository.findByUserId(userId, pageable);
+        return addresses.map(address -> addressMapper.toDTO(address, storageService));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserProfileDTO> getUsersByAddressId(Long addressId) {
+        log.info("Administration : Consultation des utilisateurs propriétaires de l'adresse ID={}", addressId);
+        if (!addressRepository.existsById(addressId)) {
+            throw new AddressNotFoundException("Adresse non trouvée avec l'ID: " + addressId);
+        }
+        List<User> users = userRepository.findByAddresses_Id(addressId);
+        return users.stream()
+                .map(userMapper::toDto)
+                .toList();
     }
 }

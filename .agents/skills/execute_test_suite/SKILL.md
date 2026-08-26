@@ -18,7 +18,7 @@ Ce workflow utilise l'un des modèles IA suivants :
 
 ## Objectif
 
-Ce workflow exécute, vérifie et diagnostique la suite de tests du projet Spring Boot **FindMe** (Unitaires, Intégration, E2E). À la fin de l'exécution, il génère un **rapport exhaustif** de tous les tests effectués (réussis et échoués avec raisons). En cas de problème de dépendance dans le `pom.xml`, il notifie l'utilisateur et demande sa **validation explicite** avant toute résolution.
+Ce workflow exécute, vérifie et diagnostique la suite de tests du projet Spring Boot **FindMe** (Unitaires, Intégration, E2E). À la fin de l'exécution, il génère un **rapport exhaustif** de tous les tests effectués (réussis et échoués avec raisons). Pour TOUTE modification à effectuer dans le projet (code, tests, `pom.xml`, scripts SQL, configuration), il explique au préalable le problème résolu et attend la **validation explicite** de l'utilisateur avant d'appliquer tout changement.
 
 ---
 
@@ -45,36 +45,31 @@ Sélectionner l'une des commandes Maven selon le périmètre demandé :
 
 ---
 
-## Phase 2 — Détection Spécifique des Problèmes de Dépendances (`pom.xml`)
+## Phase 2 — Règle Obligatoire de Validation Préalable pour Toute Modification
 
-Si l'exécution Maven échoue pendant la phase de compilation de test ou de chargement des dépendances, vérifier immédiatement les logs pour repérer les erreurs de type :
-- `ClassNotFoundException` / `NoClassDefFoundError` (ex: dépendance de test manquante dans `pom.xml`).
-- `Cannot resolve symbol` lors de la compilation des tests.
-- Dépendances invalides ou inexistantes dans Spring Boot 4.x (ex: `spring-boot-starter-actuator-test`, `spring-boot-starter-data-jpa-test`).
-- Incompatibilité de version de dépendances.
+Si l'exécution Maven échoue (compilation, dépendances, migrations Flyway, erreurs de contexte Spring, échecs d'assertions de tests) et nécessite une correction :
 
-### ⚠️ RÈGLE OBLIGATOIRE DE VALIDATION UTILISATEUR :
-Si une erreur de dépendance est identifiée :
-1. **Notifier l'utilisateur** avec la description exacte de la dépendance manquante ou problématique.
-2. **Présenter la modification exacte** à apporter dans le `pom.xml` (diff ou snippet XML).
-3. **Demander la validation explicite de l'utilisateur** avant de modifier le fichier `pom.xml`.
+### ⚠️ RÈGLE OBLIGATOIRE ET ABSOLUE DE VALIDATION UTILISATEUR :
+Avant d'effectuer la **MOINDRE MODIFICATION** sur **TOUT FICHIER** du projet (`pom.xml`, code source Java, scripts SQL/Flyway, fichiers de configuration `.properties`/`.yml`, classes de test, etc.) :
+
+1. **Explication du problème** : Expliquer clairement quel souci ou erreur technique la modification résout (avec extrait des logs ou stacktraces à l'appui).
+2. **Présentation de la modification** : Présenter la modification exacte proposée (diff, extrait de code ou snippet XML/SQL/Java).
+3. **Demande de validation explicite** : Solliciter l'avis/la validation de l'utilisateur et **attendre sa réponse explicite** avant toute application dans le projet.
 
 #### Exemple de demande de validation :
 ```markdown
 > [!WARNING]
-> Échec des tests lié à un problème de dépendance Maven (`pom.xml`).
+> Échec lors de l'exécution des tests.
 > 
-> **Cause** : La classe `org.h2.Driver` est introuvable lors de l'exécution des tests d'intégration.
-> **Action corrective proposée** : Ajouter la dépendance `h2` avec scope `test` dans `pom.xml` :
-> ```xml
-> <dependency>
->     <groupId>com.h2database</groupId>
->     <artifactId>h2</artifactId>
->     <scope>test</scope>
-> <dependency>
+> **Souci identifié** : [Description claire du problème et de la cause racine]
+> **Problème résolu** : [Ce que ce correctif vient résoudre et corriger dans le projet]
+> **Action corrective proposée** :
+> ```diff
+> - code_ou_config_actuel
+> + nouveau_code_ou_config
 > ```
 > 
-> **Veuillez valider l'application de cette modification dans `pom.xml` (Oui/Non).**
+> **Veuillez valider ou donner votre avis avant l'application de cette modification (Oui/Non).**
 ```
 
 ---
@@ -125,12 +120,14 @@ Si une erreur de dépendance est identifiée :
 - **Raison détaillée / Diagnostic** :
   [Explication claire de la cause technique de l'échec]
 - **Action corrective recommandée** :
-  [Description du correctif dans le code source ou la classe de test]
+  [Description du correctif proposé dans le code source ou la classe de test]
 
 ---
 
 ## Phase 4 — Résolution et Re-test
 
-1. En cas d'échecs dus au code métier ou aux assertions de test, proposer la solution à l'utilisateur.
-2. Une fois le correctif validé et appliqué, re-tester automatiquement le périmètre concerné.
-3. Répéter jusqu'à l'obtention du `BUILD SUCCESS` global.
+1. En cas d'échecs (code métier, assertions, configuration, migrations SQL, pom.xml), analyser le diagnostic.
+2. **Expliquer le problème résolu**, présenter la modification proposée et **attendre la validation explicite de l'utilisateur** avant de modifier tout fichier.
+3. Une fois le correctif validé par l'utilisateur et appliqué, re-tester le périmètre concerné.
+4. Répéter jusqu'à l'obtention du `BUILD SUCCESS` global.
+

@@ -5,6 +5,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.security.Principal;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -23,7 +24,7 @@ import java.util.Set;
  * </ul>
  * </p>
  */
-public class UserPrincipal implements UserDetails {
+public class UserPrincipal implements UserDetails, Principal {
 
     private final User user;
     private final Collection<? extends GrantedAuthority> authorities;
@@ -54,6 +55,11 @@ public class UserPrincipal implements UserDetails {
 
     public User getUser() {
         return user;
+    }
+
+    @Override
+    public String getName() {
+        return user.getEmail();
     }
 
     @Override
