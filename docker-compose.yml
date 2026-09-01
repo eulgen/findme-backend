@@ -4,16 +4,21 @@ services:
       context: .
     container_name: auth-service
     ports:
-      - "8080:8080"
+      - "${SERVER_PORT:-8080}:8080"
+    env_file:
+      - .env
     environment:
       - DB_URL=jdbc:postgresql://auth-db:5432/findme_db
-      - DB_USER=findme_user
-      - DB_PASSWORD=findme_password
+      - DB_USER=${DB_USER:-findme_user}
+      - DB_PASSWORD=${DB_PASSWORD:-findme_password}
       - SPRING_MAIL_HOST=mailpit
       - SPRING_MAIL_PORT=1025
-      - JWT_SECRET=dGhpc19pc19hX3Zlcnlfc2VjdXJlX2xvbmdfc2VjcmV0X2tleV9mb3Jfand0X3NpZ25pbmdfYW5kX3ZlcmlmaWNhdGlvbl8xMjM0NTY3ODkw
-      - JWT_ACCESS_MINUTES=15
-      - JWT_REFRESH_DAYS=30
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - APPLE_TEAM_ID=${APPLE_TEAM_ID}
+      - APPLE_CLIENT_ID=${APPLE_CLIENT_ID}
+      - APPLE_KEY_ID=${APPLE_KEY_ID}
+      - APPLE_PRIVATE_KEY_PATH=${APPLE_PRIVATE_KEY_PATH}
     depends_on:
       auth-db:
         condition: service_healthy
@@ -26,14 +31,14 @@ services:
     restart: always
     environment:
       - POSTGRES_DB=findme_db
-      - POSTGRES_USER=findme_user
-      - POSTGRES_PASSWORD=findme_password
+      - POSTGRES_USER=${DB_USER:-findme_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-findme_password}
     ports:
       - "5432:5432"
     volumes:
       - auth-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U findme_user -d findme_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-findme_user} -d findme_db"]
       interval: 5s
       timeout: 5s
       retries: 5
