@@ -1,0 +1,71 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+###CONFIDENTIAL FILES###
+api-docs.json
+client_secret_*.json
+.env
+run_springboot.sh
+test_*.py
+uploads/
+
+### KEYS & CERTIFICATES ###
+*.p8
+*.pem
+*.key
+*.jks
+*.keystore
+*.p12
+
+### ENVIRONMENTS & SECRETS ###
+.env.*
+!.env.example
+docker-compose.yml
+docker-compose.override.yml
+application-local.yml
+application-secret.yml
+application-local.properties
+
+### POSTMAN ###
+*.postman_environment.json
+findme.postman_collection.json
+
+### LOGS & SYSTEM ###
+*.log
+logs/
+.DS_Store
+Thumbs.db
+
+#agents
+.agents/

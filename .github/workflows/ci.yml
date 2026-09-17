@@ -1,0 +1,162 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: "CI"
+
+# Déclencheurs du pipeline CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Permissions globales du workflow
+permissions:
+  contents: read
+
+jobs:
+  # =========================================================================
+  # JOB 1 : Détection des secrets et fuites de clés dans l'historique du dépôt
+  # =========================================================================
+  secret-scan:
+    name: Détection des secrets (Gitleaks)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer l'historique complet du dépôt
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Historique complet (depth 0) nécessaire pour analyser tous les commits avec Gitleaks
+
+      - name: Exécuter le scan Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # =========================================================================
+  # JOB 2 : Compilation, Tests & Qualité de Code (JaCoCo, Checkstyle)
+  # =========================================================================
+  build-and-test:
+    name: Build, Tests & Qualité de Code
+    needs: secret-scan # S'exécute uniquement si le scan de secrets ne trouve aucune fuite
+    runs-on: ubuntu-latest
+
+    # Service PostgreSQL pour les tests et la validation de persistance
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DB_URL }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Récupérer le code source
+        uses: actions/checkout@v4
+
+      - name: Configurer l'environnement Java 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven # Mise en cache des dépendances Maven (~/.m2) pour accélérer les futurs builds
+
+      - name: Compilation du projet Java (Maven)
+        run: mvn -B compile
+
+      - name: Exécution des tests unitaires et d'intégration avec JaCoCo
+        run: mvn -B test jacoco:report
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/${{ secrets.DB_URL }}
+          DB_USER: ${{ secrets.DB_USER}}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          STORAGE_LOCATION: /tmp/uploads
+
+      - name: Vérification du seuil de couverture de code JaCoCo
+        run: mvn -B jacoco:check
+        continue-on-error: true # Ne bloque pas le build si le seuil n'est pas encore atteint
+
+      - name: Archiver le rapport de couverture JaCoCo
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 14
+
+      - name: Archiver les rapports de tests Surefire
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 14
+
+      - name: Contrôle de la qualité de code (Checkstyle)
+        run: mvn -B checkstyle:check
+        continue-on-error: true # Étape non bloquante en cas d'avertissement de style
+
+      - name: Packaging du JAR exécutable
+        run: mvn -B package -DskipTests
+
+  # =========================================================================
+  # JOB 3 : Build de l'image Docker & Scan de Vulnérabilités (Trivy)
+  # =========================================================================
+  container-scan:
+    name: Scan du Conteneur Docker (Trivy)
+    needs: [secret-scan, build-and-test]
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write # Requis pour publier le rapport SARIF dans l'onglet Security de GitHub
+
+    steps:
+      - name: Récupérer le code source
+        uses: actions/checkout@v4
+
+      - name: Scanner le Dockerfile (Checkov)
+        uses: bridgecrewio/checkov-action@master
+        with:
+          file: Dockerfile
+          soft_fail: true
+        continue-on-error: true
+
+      - name: Construire l'image Docker FindMe
+        run: docker build -t findme-api:${{ github.sha }} .
+
+      - name: Générer l'inventaire des composants (SBOM avec Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          image: findme-api:${{ github.sha }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Archiver le SBOM (Artefact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-report
+          path: sbom.spdx.json
+
+      - name: Scan de vulnérabilités Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: findme-api:${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"
+
+      - name: Publier les résultats Trivy dans l'onglet Sécurité de GitHub
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif

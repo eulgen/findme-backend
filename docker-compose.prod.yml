@@ -1,0 +1,52 @@
+services:
+  app:
+    image: ${DOCKER_IMAGE:-ghcr.io/findme:latest}
+    container_name: findme-app
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    env_file:
+      - .env
+    environment:
+      - DB_URL=jdbc:postgresql://postgres-db:5432/${POSTGRES_DB}
+      - STORAGE_LOCATION=/app/uploads
+      - SPRING_MAIL_HOST=mailpit
+      - SPRING_MAIL_PORT=1025
+    volumes:
+      - uploads-data:/app/uploads
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: findme-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    # Sécurité : port PostgreSQL non exposé publiquement
+    expose:
+      - "5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: findme-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # Serveur SMTP interne
+      - "8025:8025" # Interface Web Mailpit pour visualiser les emails (http://<IP_DU_VPS>:8025)
+
+volumes:
+  postgres-data:
+  uploads-data:

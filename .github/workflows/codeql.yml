@@ -1,0 +1,62 @@
+# Nom du workflow affiché dans l'onglet Actions de GitHub
+name: CodeQL
+
+# Déclencheurs de l'exécution du workflow
+on:
+  # Exécution lors d'un push sur la branche principale
+  push:
+    branches: [ main ]
+
+  # Exécution lors de la création ou mise à jour d'une Pull Request vers main
+  pull_request:
+    branches: [ main ]
+
+  # Exécution programmée (Cron expression)
+  # Format POSIX Cron (heure UTC) :
+  # ┌───────────── minute (0 - 59)
+  # │ ┌─────────── heure (0 - 23, UTC)
+  # │ │ ┌───────── jour du mois (1 - 31)
+  # │ │ │ ┌────── mois (1 - 12)
+  # │ │ │ │ ┌──── jour de la semaine (0 - 6, 0 = Dimanche, 1 = Lundi, ..., 6 = Samedi)
+  # │ │ │ │ │
+  # * * * * *
+  # "0 3 * * 1" -> Tous les LUNDIS à 03:00 UTC (Scan complet hebdomadaire en tâche de fond)
+  schedule:
+    - cron: "0 3 * * 1"
+
+# Permissions requises par les actions du workflow
+permissions:
+  contents: read           # Accès en lecture au code source du dépôt
+  security-events: write   # Autorisation d'écrire les résultats d'analyse dans l'onglet Security de GitHub
+
+jobs:
+  analyze:
+    name: Analyse du code source avec CodeQL
+    runs-on: ubuntu-latest
+
+    steps:
+      # Étape 1 : Récupération du code source
+      - name: Récupérer le code du dépôt
+        uses: actions/checkout@v4
+
+      # Étape 2 : Configurer l'environnement Java 21 (Requis pour la compilation Java 21)
+      - name: Configurer l'environnement Java 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      # Étape 3 : Initialisation du moteur d'analyse CodeQL pour Java
+      - name: Initialiser CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java # Langage cible (Java pour API FindMe)
+
+      # Étape 4 : Compilation du projet Java
+      - name: Compilation du projet Java (Maven)
+        run: mvn -B compile -DskipTests
+
+      # Étape 5 : Exécution de l'analyse de sécurité et publication des rapports
+      - name: Analyser le code et envoyer le rapport
+        uses: github/codeql-action/analyze@v3

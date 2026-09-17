@@ -1,0 +1,23 @@
+# Version du format de configuration de Dependabot (la version 2 est la version standard actuelle)
+# version: 2
+
+# Liste des écosystèmes de paquets à surveiller et à mettre à jour automatiquement
+# updates:
+
+  # -------------------------------------------------------------------------
+  # 1. Surveillance des dépendances Java / Maven (défini dans pom.xml)
+  # -------------------------------------------------------------------------
+  # - package-ecosystem: "maven"
+  #   directory: "/" # Emplacement du fichier pom.xml (ici à la racine du projet)
+  #   schedule:
+  #     interval: "daily" # Fréquence de vérification des nouvelles versions (chaque semaine)
+  #   open-pull-requests-limit: 5 # Limite le nombre de Pull Requests ouvertes simultanément à 5 pour ne pas engorger le dépôt
+  #   labels: ["dependencies"] # Étiquette attribuée automatiquement aux PRs créées par Dependabot
+
+  # -------------------------------------------------------------------------
+  # 2. Surveillance des actions GitHub Actions (dans .github/workflows/)
+  # -------------------------------------------------------------------------
+  # - package-ecosystem: "github-actions"
+  #   directory: "/" # Recherche automatique des fichiers YAML dans .github/workflows/
+  #   schedule:
+  #     interval: "daily" # Vérifie les mises à jour des actions (ex: actions/checkout, actions/setup-java)
