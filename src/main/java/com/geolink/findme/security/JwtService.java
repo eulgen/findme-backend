@@ -41,7 +41,7 @@ public class JwtService {
         byte[] keyBytes;
         try {
             keyBytes = Decoders.BASE64.decode(secretKey);
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
         }
         return Keys.hmacShaKeyFor(keyBytes);

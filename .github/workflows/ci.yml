@@ -117,6 +117,7 @@ jobs:
     permissions:
       contents: read
       security-events: write # Requis pour publier le rapport SARIF dans l'onglet Security de GitHub
+      actions: read # Requis par CodeQL pour accéder aux informations du workflow
 
     steps:
       - name: Récupérer le code source
