@@ -1,0 +1,220 @@
+name: cd
+
+on:
+  workflow_run:
+    workflows: ["ci"]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set lower case repository name for Docker image
+        run: |
+          echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:sha-${{ github.event.workflow_run.head_sha || github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+
+  deploy-test:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Deploy to OVH VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_IMAGE: ghcr.io/${{ github.repository }}:latest
+          DB_URL: ${{ secrets.DB_URL || secrets.SPRING_DATASOURCE_URL }}
+          DB_USER: ${{ secrets.DB_USER || secrets.SPRING_DATASOURCE_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD || secrets.SPRING_DATASOURCE_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          GHCR_IMAGE_LOWER=$(echo "${GHCR_IMAGE}" | tr '[:upper:]' '[:lower:]')
+
+          # Détermination des paramètres de base de données
+          ACTUAL_DB_USER="${DB_USER:-${SPRING_DATASOURCE_USERNAME:-findme_user}}"
+          ACTUAL_DB_PASSWORD="${DB_PASSWORD:-${SPRING_DATASOURCE_PASSWORD:-findme_password}}"
+          RAW_DB_URL="${DB_URL:-${SPRING_DATASOURCE_URL}}"
+
+          if [[ "$RAW_DB_URL" == jdbc:postgresql://* ]]; then
+            ACTUAL_DB_URL="$RAW_DB_URL"
+            ACTUAL_DB_NAME="${RAW_DB_URL##*/}"
+            ACTUAL_DB_NAME="${ACTUAL_DB_NAME%%\?*}"
+          elif [ -n "$RAW_DB_URL" ]; then
+            ACTUAL_DB_NAME="$RAW_DB_URL"
+            ACTUAL_DB_URL="jdbc:postgresql://localhost:5432/${RAW_DB_URL}"
+          else
+            ACTUAL_DB_NAME="${POSTGRES_DB:-findme_db}"
+            ACTUAL_DB_URL="jdbc:postgresql://localhost:5432/${ACTUAL_DB_NAME}"
+          fi
+
+          # Clé JWT de secours si non configurée dans GitHub Secrets pour l'environnement de test
+          ACTUAL_JWT_SECRET="${JWT_SECRET:-dGhpc19pc19hX3Zlcnlfc2VjdXJlX2xvbmdfc2VjcmV0X2tleV9mb3Jfand0X3NpZ25pbmdfYW5kX3ZlcmlmaWNhdGlvbl8xMjM0NTY3ODkw}"
+
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -i ~/.ssh/id_rsa "${VPS_USER}@${VPS_HOST}" << REMOTE
+            set -e
+            echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
+            docker pull "${GHCR_IMAGE_LOWER}"
+
+            # 1. Base de données PostgreSQL pour FindMe
+            if docker ps -a --format '{{.Names}}' | grep -q '^findme-db$'; then
+              if ! docker ps --format '{{.Names}}' | grep -q '^findme-db$'; then
+                echo "Redémarrage du conteneur PostgreSQL existant findme-db..."
+                docker start findme-db
+                sleep 5
+              fi
+            else
+              echo "Lancement du conteneur PostgreSQL findme-db..."
+              docker run -d \
+                --name findme-db \
+                --restart always \
+                -v findme-postgres-data:/var/lib/postgresql/data \
+                -e POSTGRES_USER="${ACTUAL_DB_USER}" \
+                -e POSTGRES_PASSWORD="${ACTUAL_DB_PASSWORD}" \
+                -e POSTGRES_DB="${ACTUAL_DB_NAME}" \
+                -p 5432:5432 \
+                postgres:16-alpine
+              sleep 5
+            fi
+
+            # 2. Serveur mock email Mailpit pour l'environnement de test
+            if docker ps -a --format '{{.Names}}' | grep -q '^findme-mailpit$'; then
+              if ! docker ps --format '{{.Names}}' | grep -q '^findme-mailpit$'; then
+                echo "Redémarrage de findme-mailpit existant..."
+                docker start findme-mailpit
+              fi
+            else
+              echo "Lancement de findme-mailpit (SMTP: 1025, Web UI: 8025)..."
+              docker run -d \
+                --name findme-mailpit \
+                --restart always \
+                -p 1025:1025 \
+                -p 8025:8025 \
+                axllent/mailpit:latest || true
+            fi
+
+            # 3. Déploiement de l'API FindMe
+            echo "Arrêt de l'ancien conteneur findme-api..."
+            docker stop findme-api || true
+            docker rm findme-api || true
+
+            ENV_FILE_ARG=""
+            if [ -f "$HOME/.env_findme" ]; then
+              echo "Fichier de configuration $HOME/.env_findme détecté, injection dans le conteneur..."
+              ENV_FILE_ARG="--env-file $HOME/.env_findme"
+            else
+              echo "⚠️ Aucun fichier $HOME/.env_findme trouvé. Lancement avec les variables par défaut de GitHub."
+            fi
+
+            echo "Lancement du conteneur backend findme-api..."
+            docker run -d \
+              --name findme-api \
+              --restart always \
+              --net=host \
+              $ENV_FILE_ARG \
+              -v findme-uploads:/app/uploads \
+              -e DB_URL="${ACTUAL_DB_URL}" \
+              -e DB_USER="${ACTUAL_DB_USER}" \
+              -e DB_PASSWORD="${ACTUAL_DB_PASSWORD}" \
+              -e SPRING_DATASOURCE_URL="${ACTUAL_DB_URL}" \
+              -e SPRING_DATASOURCE_USERNAME="${ACTUAL_DB_USER}" \
+              -e SPRING_DATASOURCE_PASSWORD="${ACTUAL_DB_PASSWORD}" \
+              -e JWT_SECRET="${ACTUAL_JWT_SECRET}" \
+              -e STORAGE_LOCATION="/app/uploads" \
+              "${GHCR_IMAGE_LOWER}"
+
+            echo "Nettoyage des anciennes images Docker non utilisées..."
+            docker image prune -f
+            sleep 5
+            docker ps -a --filter name=findme-
+          REMOTE
+
+      - name: Health check post-déploiement
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          echo "Démarrage de la vérification de santé (Health check) de l'application FindMe..."
+          echo "URL cible : http://${VPS_HOST}:8080/actuator/health"
+
+          MAX_RETRIES=15
+          RETRY_INTERVAL=5
+          HEALTH_URL="http://${VPS_HOST}:8080/actuator/health"
+          SUCCESS=false
+
+          for ((i=1; i<=MAX_RETRIES; i++)); do
+            echo "Tentative $i/$MAX_RETRIES : interrogation du endpoint de santé..."
+
+            # 1. Tentative d'appel externe direct
+            HTTP_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" --connect-timeout 5 "$HEALTH_URL" 2>/dev/null || true)
+            HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed -e '$d')
+            HTTP_CODE=$(echo "$HTTP_RESPONSE" | tail -n 1 | sed 's/HTTP_CODE://')
+
+            # 2. Si l'appel externe échoue (ex: port 8080 non exposé publiquement / pare-feu VPS actif), tentative en local sur le VPS via SSH
+            if [ "$HTTP_CODE" != "200" ]; then
+              SSH_HTTP_RESPONSE=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i ~/.ssh/id_rsa "${VPS_USER}@${VPS_HOST}" \
+                "curl -s -w '\nHTTP_CODE:%{http_code}' --connect-timeout 5 'http://localhost:8080/actuator/health'" 2>/dev/null || true)
+              if [ -n "$SSH_HTTP_RESPONSE" ]; then
+                HTTP_BODY=$(echo "$SSH_HTTP_RESPONSE" | sed -e '$d')
+                HTTP_CODE=$(echo "$SSH_HTTP_RESPONSE" | tail -n 1 | sed 's/HTTP_CODE://')
+              fi
+            fi
+
+            echo "Code HTTP retourné : $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "Réponse de l'Actuator :"
+              echo "$HTTP_BODY"
+              if echo "$HTTP_BODY" | grep -q '"status":"UP"'; then
+                echo "✅ Health check réussi ! L'application FindMe est en ligne et son statut est UP."
+                SUCCESS=true
+                break
+              fi
+            fi
+
+            sleep $RETRY_INTERVAL
+          done
+
+          if [ "$SUCCESS" != "true" ]; then
+            echo "❌ Échec du Health check après $((MAX_RETRIES * RETRY_INTERVAL)) secondes !"
+            echo "Diagnostic : Récupération de l'état des conteneurs et des logs..."
+            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -i ~/.ssh/id_rsa "${VPS_USER}@${VPS_HOST}" \
+              "echo '=== État des conteneurs Docker FindMe ==='; docker ps -a --filter name=findme-; echo '=== 100 dernières lignes de logs : findme-api ==='; docker logs --tail 100 findme-api; echo '=== 50 dernières lignes de logs : findme-db ==='; docker logs --tail 50 findme-db"
+            exit 1
+          fi
