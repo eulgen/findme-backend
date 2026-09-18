@@ -89,7 +89,7 @@ jobs:
           java-version: 21
           cache: maven
       - name: Exécution des tests d'intégration
-        run: mvn -B failsafe:integration-test
+        run: mvn -B verify -Dsurefire.skip=true
         env:
           DB_URL: jdbc:postgresql://localhost:5432/${{ secrets.DB_URL }}
           DB_USER: ${{ secrets.DB_USER}}
