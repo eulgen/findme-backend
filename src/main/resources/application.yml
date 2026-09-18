@@ -80,15 +80,15 @@ app:
   storage:
     location: ${STORAGE_LOCATION:uploads}
   backend:
-    base-url: ${BACKEND_BASE_URL:http://localhost:8080}
+    base-url: ${BACKEND_BASE_URL:http://vps-72ef1170.vps.ovh.net:8080}
   otp:
     ttl-minutes: ${APP_OTP_TTL_MINUTES:10}
   mail:
     from: ${APP_MAIL_FROM:findMe <no-reply@findme.geolink.com>}
   frontend:
-    base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+    base-url: ${FRONTEND_BASE_URL:http://vps-72ef1170.vps.ovh.net:3000}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5173}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://vps-72ef1170.vps.ovh.net:3000,http://vps-72ef1170.vps.ovh.net:3001,http://vps-72ef1170.vps.ovh.net:5173}
 
 apple:
   team-id: ${APPLE_TEAM_ID:mock-team-id}
