@@ -74,15 +74,15 @@ jobs:
           RAW_DB_URL="${DB_URL:-${SPRING_DATASOURCE_URL}}"
 
           if [[ "$RAW_DB_URL" == jdbc:postgresql://* ]]; then
-            ACTUAL_DB_URL="$RAW_DB_URL"
+            ACTUAL_DB_URL="${RAW_DB_URL/localhost/findme-db}"
             ACTUAL_DB_NAME="${RAW_DB_URL##*/}"
             ACTUAL_DB_NAME="${ACTUAL_DB_NAME%%\?*}"
           elif [ -n "$RAW_DB_URL" ]; then
             ACTUAL_DB_NAME="$RAW_DB_URL"
-            ACTUAL_DB_URL="jdbc:postgresql://localhost:5432/${RAW_DB_URL}"
+            ACTUAL_DB_URL="jdbc:postgresql://findme-db:5432/${RAW_DB_URL}"
           else
             ACTUAL_DB_NAME="${POSTGRES_DB:-findme_db}"
-            ACTUAL_DB_URL="jdbc:postgresql://localhost:5432/${ACTUAL_DB_NAME}"
+            ACTUAL_DB_URL="jdbc:postgresql://findme-db:5432/${ACTUAL_DB_NAME}"
           fi
 
           # Clé JWT de secours si non configurée dans GitHub Secrets pour l'environnement de test
@@ -92,6 +92,12 @@ jobs:
             set -e
             echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
             docker pull "${GHCR_IMAGE_LOWER}"
+
+            # Création du réseau Docker s'il n'existe pas
+            if ! docker network ls | grep -q 'findme-net'; then
+              echo "Création du réseau Docker findme-net..."
+              docker network create findme-net
+            fi
 
             # 1. Base de données PostgreSQL pour FindMe
             if docker ps -a --format '{{.Names}}' | grep -q '^findme-db$'; then
@@ -105,6 +111,7 @@ jobs:
               docker run -d \
                 --name findme-db \
                 --restart always \
+                --network findme-net \
                 -v findme-postgres-data:/var/lib/postgresql/data \
                 -e POSTGRES_USER="${ACTUAL_DB_USER}" \
                 -e POSTGRES_PASSWORD="${ACTUAL_DB_PASSWORD}" \
@@ -125,6 +132,7 @@ jobs:
               docker run -d \
                 --name findme-mailpit \
                 --restart always \
+                --network findme-net \
                 -p 1025:1025 \
                 -p 8025:8025 \
                 axllent/mailpit:latest || true
@@ -147,7 +155,8 @@ jobs:
             docker run -d \
               --name findme-api \
               --restart always \
-              --net=host \
+              --network findme-net \
+              -p 8080:8080 \
               $ENV_FILE_ARG \
               -v findme-uploads:/app/uploads \
               -e DB_URL="${ACTUAL_DB_URL}" \
@@ -158,6 +167,7 @@ jobs:
               -e SPRING_DATASOURCE_PASSWORD="${ACTUAL_DB_PASSWORD}" \
               -e JWT_SECRET="${ACTUAL_JWT_SECRET}" \
               -e STORAGE_LOCATION="/app/uploads" \
+              -e SPRING_MAIL_HOST="findme-mailpit" \
               "${GHCR_IMAGE_LOWER}"
 
             echo "Nettoyage des anciennes images Docker non utilisées..."
