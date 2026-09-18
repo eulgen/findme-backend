@@ -136,11 +136,11 @@ jobs:
             docker rm findme-api || true
 
             ENV_FILE_ARG=""
-            if [ -f "$HOME/.env_findme" ]; then
-              echo "Fichier de configuration $HOME/.env_findme détecté, injection dans le conteneur..."
-              ENV_FILE_ARG="--env-file $HOME/.env_findme"
+            if [ -f ~/.env_findme ]; then
+              echo "Fichier de configuration ~/.env_findme détecté, injection dans le conteneur..."
+              ENV_FILE_ARG="--env-file ~/.env_findme"
             else
-              echo "⚠️ Aucun fichier $HOME/.env_findme trouvé. Lancement avec les variables par défaut de GitHub."
+              echo "⚠️ Aucun fichier ~/.env_findme trouvé. Lancement avec les variables par défaut de GitHub."
             fi
 
             echo "Lancement du conteneur backend findme-api..."
